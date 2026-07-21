@@ -512,34 +512,3 @@ rm -rf .vite
 ## 📄 Licencia
 
 Este proyecto está bajo licencia MIT. Ver archivo `LICENSE` para más detalles.
-
----
-
-## 👥 Contribución
-
-Las contribuciones son bienvenidas. Por favor:
-
-1. Fork el repositorio
-2. Crear una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir un Pull Request
-
-### Requisitos para PRs
-
-- ✅ Tests pasando
-- ✅ Coverage > 70%
-- ✅ Code review aprobado
-- ✅ Actualizar documentación si aplica
-
----
-
-## 📞 Soporte
-
-Para reportar bugs o pedir features, abrir un issue en GitHub.
-
----
-
-**Última actualización:** Julio 2026  
-**Versión:** 1.0.0  
-**Mantenedor:** [@yourusername](https://github.com/yourusername)
