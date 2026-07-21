@@ -1,0 +1,16 @@
+{
+  "name": "Solar Maintenance",
+  "short_name": "SolarMaint",
+  "description": "Plataforma de gestión de mantenimiento fotovoltaico",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
