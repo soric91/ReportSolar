@@ -15,6 +15,12 @@ from app.schemas.proyecto import (
 router = APIRouter(prefix="/api/proyectos", tags=["Proyectos"])
 
 
+def _set_plantilla_nombre(proyecto: Proyecto) -> None:
+    proyecto.plantilla_nombre = (
+        proyecto.plantilla.nombre if proyecto.plantilla else None
+    )
+
+
 @router.get("/", response_model=PaginatedResponse[ProyectoResponse])
 def list_proyectos(
     cliente: Optional[str] = None,
@@ -36,7 +42,7 @@ def list_proyectos(
     skip = (page - 1) * limit
     results = query.offset(skip).limit(limit).all()
     for r in results:
-        r.plantilla_nombre = r.plantilla.nombre if r.plantilla else None
+        _set_plantilla_nombre(r)
 
     return PaginatedResponse.create(results, page, limit, total)
 
@@ -62,9 +68,7 @@ def get_proyecto(
                 status_code=403, detail="No tienes acceso a este proyecto"
             )
 
-    proyecto.plantilla_nombre = (
-        proyecto.plantilla.nombre if proyecto.plantilla else None
-    )
+    _set_plantilla_nombre(proyecto)
     return proyecto
 
 
@@ -99,9 +103,7 @@ def create_proyecto(
     db.commit()
     db.refresh(db_proyecto)
 
-    db_proyecto.plantilla_nombre = (
-        db_proyecto.plantilla.nombre if db_proyecto.plantilla else None
-    )
+    _set_plantilla_nombre(db_proyecto)
     return db_proyecto
 
 
@@ -123,9 +125,7 @@ def update_proyecto(
     db.commit()
     db.refresh(db_proyecto)
 
-    db_proyecto.plantilla_nombre = (
-        db_proyecto.plantilla.nombre if db_proyecto.plantilla else None
-    )
+    _set_plantilla_nombre(db_proyecto)
     return db_proyecto
 
 
@@ -159,7 +159,7 @@ def asignar_tecnico(
         .filter(
             Usuario.id == tecnico_id,
             Usuario.rol == "tecnico",
-            Usuario.estado == "activo",
+            Usuario.estado == EstadoEnum.activo,
         )
         .first()
     )

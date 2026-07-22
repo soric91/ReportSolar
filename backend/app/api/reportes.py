@@ -13,12 +13,10 @@ from datetime import datetime
 import httpx
 import base64
 import time
+import logging
 
 router = APIRouter(prefix="/api/reportes", tags=["Reportes"])
-
-
-def get_fotos_for_reporte(reporte: Reporte) -> List[dict]:
-    return reporte.fotos or []
+logger = logging.getLogger(__name__)
 
 
 class FotoResponse(BaseModel):
@@ -37,6 +35,16 @@ class FotoUploadItem(BaseModel):
 
 class FotoUploadRequest(BaseModel):
     fotos: List[FotoUploadItem]
+
+
+class ReporteCreateRequest(BaseModel):
+    visita_id: int
+    proyecto_id: int
+    checklist: dict = {}
+    observaciones: str = ""
+    recomendaciones: str = ""
+    firma_url: str = ""
+    estado: str = "borrador"
 
 
 class ReporteDetailResponse(BaseModel):
@@ -60,6 +68,31 @@ class ReporteDetailResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+def _build_reporte_response(
+    reporte: Reporte, tecnico_nombre: str = "", proyecto_nombre: str = ""
+) -> ReporteDetailResponse:
+    fotos = reporte.fotos or []
+    return ReporteDetailResponse(
+        id=reporte.id,
+        visita_id=reporte.visita_id,
+        tecnico_id=reporte.tecnico_id,
+        proyecto_id=reporte.proyecto_id,
+        tecnico_nombre=tecnico_nombre or (reporte.tecnico.nombre if reporte.tecnico else ""),
+        proyecto_nombre=proyecto_nombre or (reporte.proyecto.nombre if reporte.proyecto else ""),
+        cliente=reporte.proyecto.cliente if reporte.proyecto else "",
+        checklist=reporte.checklist or {},
+        observaciones=reporte.observaciones or "",
+        recomendaciones=reporte.recomendaciones or "",
+        firma_url=reporte.firma_url or "",
+        fotos=fotos,
+        pdf_path=reporte.pdf_path or "",
+        estado=reporte.estado or "borrador",
+        estado_sync=reporte.estado_sync or "local",
+        created_at=reporte.created_at,
+        updated_at=reporte.updated_at,
+    )
 
 
 @router.post("/{reporte_id}/fotos", status_code=201)
@@ -117,30 +150,7 @@ def list_reportes(
     skip = (page - 1) * limit
     reportes = query.order_by(Reporte.created_at.desc()).offset(skip).limit(limit).all()
 
-    result = []
-    for r in reportes:
-        fotos = get_fotos_for_reporte(r)
-        result.append(
-            ReporteDetailResponse(
-                id=r.id,
-                visita_id=r.visita_id,
-                tecnico_id=r.tecnico_id,
-                proyecto_id=r.proyecto_id,
-                tecnico_nombre=r.tecnico.nombre if r.tecnico else "",
-                proyecto_nombre=r.proyecto.nombre if r.proyecto else "",
-                cliente=r.proyecto.cliente if r.proyecto else "",
-                checklist=r.checklist or {},
-                observaciones=r.observaciones or "",
-                recomendaciones=r.recomendaciones or "",
-                firma_url=r.firma_url or "",
-                fotos=fotos,
-                pdf_path=r.pdf_path or "",
-                estado=r.estado or "borrador",
-                estado_sync=r.estado_sync or "local",
-                created_at=r.created_at,
-                updated_at=r.updated_at,
-            )
-        )
+    result = [_build_reporte_response(r) for r in reportes]
     return PaginatedResponse.create(result, page, limit, total)
 
 
@@ -163,76 +173,35 @@ def get_reporte(
         raise HTTPException(status_code=404, detail="Reporte no encontrado")
     if current_user.rol == "tecnico" and reporte.tecnico_id != current_user.id:
         raise HTTPException(status_code=403, detail="Sin acceso")
-    fotos = get_fotos_for_reporte(reporte)
-    return ReporteDetailResponse(
-        id=reporte.id,
-        visita_id=reporte.visita_id,
-        tecnico_id=reporte.tecnico_id,
-        proyecto_id=reporte.proyecto_id,
-        tecnico_nombre=reporte.tecnico.nombre if reporte.tecnico else "",
-        proyecto_nombre=reporte.proyecto.nombre if reporte.proyecto else "",
-        cliente=reporte.proyecto.cliente if reporte.proyecto else "",
-        checklist=reporte.checklist or {},
-        observaciones=reporte.observaciones or "",
-        recomendaciones=reporte.recomendaciones or "",
-        firma_url=reporte.firma_url or "",
-        fotos=fotos,
-        pdf_path=reporte.pdf_path or "",
-        estado=reporte.estado or "borrador",
-        estado_sync=reporte.estado_sync or "local",
-        created_at=reporte.created_at,
-        updated_at=reporte.updated_at,
-    )
+    return _build_reporte_response(reporte)
 
 
 @router.post("/", response_model=ReporteDetailResponse, status_code=201)
 def create_reporte(
-    visita_id: int,
-    proyecto_id: int,
-    checklist: dict = {},
-    observaciones: str = "",
-    recomendaciones: str = "",
-    firma_url: str = "",
-    estado: str = "borrador",
+    request: ReporteCreateRequest,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
     db_reporte = Reporte(
-        visita_id=visita_id,
-        proyecto_id=proyecto_id,
+        visita_id=request.visita_id,
+        proyecto_id=request.proyecto_id,
         tecnico_id=current_user.id,
-        checklist=checklist,
-        observaciones=observaciones,
-        recomendaciones=recomendaciones,
-        firma_url=firma_url,
-        estado=estado,
+        checklist=request.checklist,
+        observaciones=request.observaciones,
+        recomendaciones=request.recomendaciones,
+        firma_url=request.firma_url,
+        estado=request.estado,
     )
     db.add(db_reporte)
     db.commit()
     db.refresh(db_reporte)
-    return ReporteDetailResponse(
-        id=db_reporte.id,
-        visita_id=db_reporte.visita_id,
-        tecnico_id=db_reporte.tecnico_id,
-        proyecto_id=db_reporte.proyecto_id,
-        tecnico_nombre=current_user.nombre,
-        checklist=checklist,
-        observaciones=observaciones,
-        recomendaciones=recomendaciones,
-        firma_url=firma_url,
-        estado=estado,
-        created_at=db_reporte.created_at,
-    )
+    return _build_reporte_response(db_reporte, tecnico_nombre=current_user.nombre)
 
 
 @router.put("/{reporte_id}", response_model=ReporteDetailResponse)
 def update_reporte(
     reporte_id: int,
-    checklist: dict = None,
-    observaciones: str = None,
-    recomendaciones: str = None,
-    firma_url: str = None,
-    estado: str = None,
+    request: ReporteCreateRequest,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
@@ -242,34 +211,13 @@ def update_reporte(
     if current_user.rol == "tecnico" and db_reporte.tecnico_id != current_user.id:
         raise HTTPException(status_code=403, detail="Sin acceso")
 
-    if checklist is not None:
-        db_reporte.checklist = checklist
-    if observaciones is not None:
-        db_reporte.observaciones = observaciones
-    if recomendaciones is not None:
-        db_reporte.recomendaciones = recomendaciones
-    if firma_url is not None:
-        db_reporte.firma_url = firma_url
-    if estado is not None:
-        db_reporte.estado = estado
+    update_data = request.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_reporte, field, value)
 
     db.commit()
     db.refresh(db_reporte)
-    return ReporteDetailResponse(
-        id=db_reporte.id,
-        visita_id=db_reporte.visita_id,
-        tecnico_id=db_reporte.tecnico_id,
-        proyecto_id=db_reporte.proyecto_id,
-        tecnico_nombre=current_user.nombre,
-        checklist=db_reporte.checklist or {},
-        observaciones=db_reporte.observaciones or "",
-        recomendaciones=db_reporte.recomendaciones or "",
-        firma_url=db_reporte.firma_url or "",
-        estado=db_reporte.estado or "borrador",
-        estado_sync=db_reporte.estado_sync or "local",
-        created_at=db_reporte.created_at,
-        updated_at=db_reporte.updated_at,
-    )
+    return _build_reporte_response(db_reporte, tecnico_nombre=current_user.nombre)
 
 
 @router.delete("/{reporte_id}", status_code=204)
@@ -339,14 +287,16 @@ def upload_foto(
             timeout=120,
         )
         if resp.status_code not in (200, 201):
-            print(f"[UPLOAD ERROR] Supabase respondió {resp.status_code}: {resp.text}")
+            logger.warning(
+                f"Supabase upload failed: status={resp.status_code}, response={resp.text}"
+            )
             raise HTTPException(
                 status_code=500, detail=f"Error subiendo foto: {resp.text}"
             )
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[UPLOAD ERROR] Excepción: {type(e).__name__}: {e}")
+        logger.exception(f"Photo upload exception: {type(e).__name__}")
         raise HTTPException(status_code=500, detail=f"Error subiendo foto: {str(e)}")
 
     public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/app_report/{path}"

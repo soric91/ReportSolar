@@ -39,12 +39,9 @@ export default function TechChecklistPage() {
 
         const p = await db.getProyecto(parseInt(id))
         setProyecto(p)
-        console.log('Proyecto cargado:', p)
-        console.log('Plantilla:', p?.plantilla)
         if (p?.plantilla?.secciones) {
           setSecciones(mergeSeccionesWithDefaults(p.plantilla.secciones, defaults))
         } else if (p?.plantilla && !Array.isArray(p.plantilla)) {
-          // Si la plantilla está como objeto pero no tiene secciones, obtenerla del servidor
           try {
             const plantillaRes = await reportesService.list({ proyecto_id: parseInt(id) })
             const reporte = (plantillaRes.data?.data || plantillaRes.data)?.[0]
@@ -52,34 +49,24 @@ export default function TechChecklistPage() {
               setSecciones(mergeSeccionesWithDefaults(reporte.plantilla.secciones, defaults))
             }
           } catch (e) {
-            console.warn('No se pudo obtener plantilla del servidor:', e)
+            // Plantilla no disponible
           }
         }
 
         let reporteData = null
         try {
           const res = await reportesService.list({ proyecto_id: parseInt(id) })
-          console.log('📋 Respuesta reportes:', res)
           const all = res.data?.data || res.data || []
-          console.log('📊 Total reportes encontrados:', all.length, all)
 
           if (visitaId) {
-            // Si hay visitaId, carga ese informe específico
             reporteData = all.find(r => r.visita_id === parseInt(visitaId))
-            console.log('🔍 Buscando por visitaId:', visitaId, reporteData)
           } else {
-            // Si no hay visitaId, busca borrador primero
             reporteData = all.find(r => r.estado === 'borrador')
-            console.log('🔍 Buscando borrador:', reporteData)
-            // Si no hay borrador, toma el más reciente (sin importar estado)
             if (!reporteData && all.length > 0) {
               reporteData = all[0]
-              console.log('🔍 Tomando el más reciente:', reporteData)
             }
           }
         } catch (e) {
-          console.warn('⚠️ Error listando reportes:', e)
-          // Fallback a BD local
           if (visitaId) {
             const visitas = await db.getVisitasByProyecto(parseInt(id))
             const visita = visitas.find(v => v.id === parseInt(visitaId))
@@ -93,8 +80,6 @@ export default function TechChecklistPage() {
         }
 
         if (reporteData) {
-          console.log('✅ Cargando reporte:', reporteData)
-          console.log('📦 Checklist structure:', reporteData.checklist)
           setChecklist(reporteData.checklist || {})
           setObservaciones(reporteData.observaciones || '')
           setRecomendaciones(reporteData.recomendaciones || '')
@@ -162,9 +147,7 @@ export default function TechChecklistPage() {
               ? { ...f, url: result.url, path: result.path, uploaded: true }
               : f
           ))
-          console.log(`✅ Foto subida: ${foto.checklist_item}`)
         } catch (err) {
-          console.error(`❌ Error subiendo foto ${foto.checklist_item}:`, err)
           // Marca la foto como fallida pero continúa con otras
           setFotos(prev => prev.map(f =>
             f.checklist_item === foto.checklist_item && f.tipo === foto.tipo
@@ -194,22 +177,18 @@ export default function TechChecklistPage() {
         fotos: fotosFinales || [],
       }
 
-      console.log('📤 Guardando datos + fotos:', saveData)
       syncService.addToPending(saveData)
       const result = await syncService.syncAll()
 
-      console.log('📥 Respuesta sync:', result)
       if (result?.detalles?.length > 0) {
         const ok = result.detalles.find(d => d.status === 'ok')
         if (ok?.reporte_id) {
           setServerReporteId(ok.reporte_id)
-          console.log('✅ Informe guardado con ID:', ok.reporte_id)
         }
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
-      console.error('❌ Error guardando:', err)
       alert('Error: ' + (err.message || 'No se pudo guardar'))
     } finally {
       setSaving(false)
@@ -238,7 +217,6 @@ export default function TechChecklistPage() {
       await syncService.syncAll()
       navigate(`/tech/proyecto/${id}`)
     } catch (err) {
-      console.error('Error finalizando:', err)
       alert('Error al enviar')
     } finally {
       setSaving(false)
@@ -288,13 +266,11 @@ export default function TechChecklistPage() {
               dataUrl: preview,
               uploaded: false,
             }])
-            console.log(`📸 Foto agregada: ${checklistItem} (${tipo})`)
           }
           img.src = ev.target.result
         }
         reader.readAsDataURL(file)
       } catch (err) {
-        console.error('Error procesando imagen:', err)
         alert('Error al procesar la foto')
       }
     }
