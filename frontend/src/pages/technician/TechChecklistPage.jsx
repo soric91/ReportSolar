@@ -7,6 +7,7 @@ import { reportesService } from '../../services/reportesService'
 import { loadDefaultSecciones, getDefaultSeccionesSync, ESTADOS, mergeSeccionesWithDefaults } from '../../utils/plantillas'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { ArrowLeftIcon, TrashIcon, CameraIcon, CheckIcon, XIcon, SaveIcon, SpinnerIcon, WifiOffIcon } from '../../components/icons'
+import Modal from '../../components/Modal'
 
 export default function TechChecklistPage() {
   const { id, visitaId } = useParams()
@@ -25,6 +26,7 @@ export default function TechChecklistPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'alert' })
   const isOnline = useOnlineStatus()
 
   useEffect(() => {
@@ -198,7 +200,13 @@ export default function TechChecklistPage() {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
-      alert('Error: ' + (err.message || 'No se pudo guardar'))
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: 'Error: ' + (err.message || 'No se pudo guardar'),
+        type: 'alert',
+        onConfirm: null
+      })
     } finally {
       setSaving(false)
       setUploadProgress(null)
@@ -208,8 +216,19 @@ export default function TechChecklistPage() {
   const handleFinalizar = async () => {
     const datos = checklist['datos_proyecto'] || {}
     if (!datos['Cliente']?.trim()) {
-      if (!confirm('Campo "Cliente" vacío. ¿Enviar de todas formas?')) return
+      setModal({
+        isOpen: true,
+        title: 'Campo vacío',
+        message: 'El campo "Cliente" está vacío. ¿Deseas enviar de todas formas?',
+        type: 'confirm',
+        onConfirm: () => finalizarReporte()
+      })
+      return
     }
+    finalizarReporte()
+  }
+
+  const finalizarReporte = async () => {
     setSaving(true)
     try {
       syncService.addToPending({
@@ -226,18 +245,31 @@ export default function TechChecklistPage() {
       await syncService.syncAll()
       navigate(`/tech/proyecto/${id}`)
     } catch (err) {
-      alert('Error al enviar')
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: 'Error al enviar',
+        type: 'alert',
+        onConfirm: null
+      })
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm('¿Eliminar este borrador?')) return
-    if (serverReporteId) {
-      try { await reportesService.delete(serverReporteId) } catch {}
-    }
-    navigate(`/tech/proyecto/${id}`)
+    setModal({
+      isOpen: true,
+      title: 'Eliminar borrador',
+      message: '¿Estás seguro que deseas eliminar este borrador?',
+      type: 'confirm',
+      onConfirm: async () => {
+        if (serverReporteId) {
+          try { await reportesService.delete(serverReporteId) } catch {}
+        }
+        navigate(`/tech/proyecto/${id}`)
+      }
+    })
   }
 
   const selectPhoto = (secId, campo, tipo) => {
@@ -280,7 +312,13 @@ export default function TechChecklistPage() {
         }
         reader.readAsDataURL(file)
       } catch (err) {
-        alert('Error al procesar la foto')
+        setModal({
+          isOpen: true,
+          title: 'Error',
+          message: 'Error al procesar la foto',
+          type: 'alert',
+          onConfirm: null
+        })
       }
     }
     input.click()
@@ -693,6 +731,16 @@ export default function TechChecklistPage() {
           </p>
         </div>
       </div>
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        confirmText={modal.type === 'confirm' ? 'Confirmar' : 'Aceptar'}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        onConfirm={modal.onConfirm}
+      />
     </div>
   )
 }
