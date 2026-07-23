@@ -182,6 +182,21 @@ def create_reporte(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
+    existing_borrador = (
+        db.query(Reporte)
+        .filter(
+            Reporte.proyecto_id == request.proyecto_id,
+            Reporte.tecnico_id == current_user.id,
+            Reporte.estado == "borrador",
+        )
+        .first()
+    )
+    if existing_borrador:
+        raise HTTPException(
+            status_code=409,
+            detail="Ya existe un borrador en proceso. Termina o elimina ese primero.",
+        )
+
     db_reporte = Reporte(
         visita_id=request.visita_id,
         proyecto_id=request.proyecto_id,
