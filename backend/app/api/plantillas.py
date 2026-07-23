@@ -83,8 +83,13 @@ DEFAULT_SECCIONES = [
         "icono": "🔋",
         "dinamico_inversores": True,
         "campos": [
-            {"nombre": "Voltajes por String", "tipo": "grupo_strings", "strings_por_inversor": 6, "sin_fotos": True},
-            {"nombre": "Foto de mediciones", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {
+                "nombre": "Voltajes por String",
+                "tipo": "grupo_strings",
+                "strings_por_inversor": 6,
+                "foto_per_item": True,
+                "sin_fotos": False,
+            },
         ],
     },
     {
@@ -101,9 +106,9 @@ DEFAULT_SECCIONES = [
                     {"nombre": "L1-N (V)", "tipo": "ac"},
                     {"nombre": "Frecuencia (Hz)", "tipo": "ac"},
                 ],
-                "sin_fotos": True,
+                "foto_per_item": True,
+                "sin_fotos": False,
             },
-            {"nombre": "Foto de mediciones", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
         ],
     },
     {

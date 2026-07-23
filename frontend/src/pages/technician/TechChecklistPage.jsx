@@ -438,26 +438,51 @@ export default function TechChecklistPage() {
       const numInv = proyecto?.componentes?.inversores || 1
       const numStr = campo.strings_por_inversor || 4
       const grupoVal = val || {}
+      const fotoPerItem = campo.foto_per_item
+
       return (
         <div key={idx} className="md:col-span-2 lg:col-span-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <h4 className="font-semibold text-gray-800 text-xs mb-2">{campo.nombre}</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <h4 className="font-semibold text-gray-800 text-xs mb-3">{campo.nombre}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {Array.from({ length: numInv * numStr }, (_, idx) => {
               const i = Math.floor(idx / numStr)
               const j = idx % numStr
               const key = `inv${i + 1}_string${j + 1}`
+              const itemLabel = `String ${j + 1} - Inv ${i + 1}`
               return (
-                <div key={key}>
-                  <label className="text-xs text-gray-500 block mb-0.5">S{j + 1} Inv{i + 1}</label>
-                  <input type="number" step="0.1" value={grupoVal[key] || ''}
-                    onChange={(e) => updateSubItem(secId, campo.nombre, key, e.target.value)}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50"
-                    placeholder="V" />
+                <div key={key} className="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                  <label className="text-xs font-semibold text-gray-700 block mb-1.5">{itemLabel}</label>
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <input type="number" step="0.1" value={grupoVal[key] || ''}
+                        onChange={(e) => updateSubItem(secId, campo.nombre, key, e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white"
+                        placeholder="V" />
+                    </div>
+                    {fotoPerItem && (
+                      <button onClick={() => selectPhoto(secId, `${campo.nombre}_${key}`, 'unica')}
+                        className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200">
+                        📷
+                      </button>
+                    )}
+                  </div>
+                  {fotoPerItem && (
+                    <div className="mt-2 flex gap-1 flex-wrap">
+                      {getFotosForCampo(secId, `${campo.nombre}_${key}`).map((foto) => (
+                        <div key={foto.id} className="relative">
+                          <img src={foto.url} alt={itemLabel} className="w-12 h-12 object-cover rounded border border-blue-200" />
+                          <button onClick={() => deleteFoto(foto.id)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
-          {renderFotoSection(secId, campo)}
         </div>
       )
     }
@@ -466,21 +491,45 @@ export default function TechChecklistPage() {
       const ac = campo.sub_campos?.filter(c => c.tipo === 'ac') || []
       const dc = campo.sub_campos?.filter(c => c.tipo === 'dc') || []
       const grupoVal = val || {}
+      const fotoPerItem = campo.foto_per_item
+
       return (
         <div key={idx} className="md:col-span-2 lg:col-span-3 bg-white rounded-lg p-3 shadow-sm border border-gray-100">
-          <h4 className="font-semibold text-gray-800 text-xs mb-2">{campo.nombre}</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <h4 className="font-semibold text-gray-800 text-xs mb-3">{campo.nombre}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[...ac, ...dc].map((sub, i) => (
-              <div key={i}>
-                <label className="text-xs text-gray-500 block mb-0.5">{sub.nombre}</label>
-                <input type="number" step="0.1" value={grupoVal[sub.nombre] || ''}
-                  onChange={(e) => updateSubItem(secId, campo.nombre, sub.nombre, e.target.value)}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50"
-                  placeholder={sub.placeholder || 'V'} />
+              <div key={i} className="border border-gray-200 rounded-lg p-2 bg-gray-50">
+                <label className="text-xs font-semibold text-gray-700 block mb-1.5">{sub.nombre}</label>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <input type="number" step="0.1" value={grupoVal[sub.nombre] || ''}
+                      onChange={(e) => updateSubItem(secId, campo.nombre, sub.nombre, e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs bg-white"
+                      placeholder={sub.placeholder || 'V'} />
+                  </div>
+                  {fotoPerItem && (
+                    <button onClick={() => selectPhoto(secId, `${campo.nombre}_${sub.nombre}`, 'unica')}
+                      className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200">
+                      📷
+                    </button>
+                  )}
+                </div>
+                {fotoPerItem && (
+                  <div className="mt-2 flex gap-1 flex-wrap">
+                    {getFotosForCampo(secId, `${campo.nombre}_${sub.nombre}`).map((foto) => (
+                      <div key={foto.id} className="relative">
+                        <img src={foto.url} alt={sub.nombre} className="w-12 h-12 object-cover rounded border border-blue-200" />
+                        <button onClick={() => deleteFoto(foto.id)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-          {renderFotoSection(secId, campo)}
         </div>
       )
     }
