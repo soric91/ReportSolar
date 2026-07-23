@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { reportesService } from '../services/reportesService'
 import { plantillasService } from '../services/plantillasService'
 import { loadDefaultSecciones, getDefaultSeccionesSync } from '../utils/plantillas'
-import { pdfGeneratorService } from '../services/pdfGeneratorService'
+import api from '../services/api'
 import Modal from '../components/Modal'
 
 const ESTADO_COLORS = {
@@ -144,24 +144,25 @@ export default function ReportesPage() {
     })
   }
 
-  const handleExportPDF = async () => {
+  const handleExportDOCX = async () => {
     if (!selectedReporte) return
     setExporting(true)
     try {
-      const secciones = getDefaultSeccionesSync()
-      await pdfGeneratorService.generatePDF(
-        selectedReporte,
-        {
-          nombre: selectedReporte.proyecto_nombre,
-          cliente: selectedReporte.cliente,
-          direccion: selectedReporte.direccion,
-          componentes: selectedReporte.componentes || {},
-        },
-        secciones
-      )
+      const response = await api.get(`/api/reportes/${selectedReporte.id}/export-docx`, {
+        responseType: 'blob'
+      })
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `Informe_${selectedReporte.proyecto_nombre}_${new Date().toISOString().split('T')[0]}.docx`)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      window.URL.revokeObjectURL(url)
     } catch (err) {
-      console.error('Error generando PDF:', err)
-      setError('Error al generar PDF')
+      console.error('Error generando DOCX:', err)
+      setError('Error al generar DOCX')
     } finally {
       setExporting(false)
     }
@@ -317,11 +318,11 @@ export default function ReportesPage() {
               <h2 className="font-bold text-gray-800">Informe #{selectedReporte.id}</h2>
               <div className="flex items-center gap-2">
                 {selectedReporte.estado === 'completado' && (
-                  <button onClick={handleExportPDF} disabled={exporting}
-                    className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 disabled:opacity-50 flex items-center gap-1">
+                  <button onClick={handleExportDOCX} disabled={exporting}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1">
                     {exporting ? (
                       <><svg className="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Generando...</>
-                    ) : '📄 Exportar PDF'}
+                    ) : '📄 Exportar DOCX'}
                   </button>
                 )}
                 <button onClick={() => handleDelete(selectedReporte.id)}

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.core.database import get_db
@@ -7,6 +8,7 @@ from app.core.security import get_current_user
 from app.models.usuario import Usuario
 from app.models.reporte import Reporte
 from app.schemas.pagination import PaginatedResponse, PaginationParams
+from app.services.docx_generator import DocxGenerator
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -14,6 +16,8 @@ import httpx
 import base64
 import time
 import logging
+import tempfile
+import os
 
 router = APIRouter(prefix="/api/reportes", tags=["Reportes"])
 logger = logging.getLogger(__name__)
@@ -322,3 +326,66 @@ def upload_foto(
         "checklist_item": request.checklist_item,
         "tipo": request.tipo,
     }
+
+
+@router.get("/{reporte_id}/export-docx")
+def export_reporte_docx(
+    reporte_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    reporte = (
+        db.query(Reporte)
+        .options(
+            joinedload(Reporte.tecnico),
+            joinedload(Reporte.proyecto),
+        )
+        .filter(Reporte.id == reporte_id)
+        .first()
+    )
+    if not reporte:
+        raise HTTPException(status_code=404, detail="Reporte no encontrado")
+    if current_user.rol == "tecnico" and reporte.tecnico_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Sin acceso")
+
+    proyecto_data = {
+        "nombre": reporte.proyecto.nombre if reporte.proyecto else "N/A",
+        "cliente": reporte.proyecto.cliente if reporte.proyecto else "",
+        "direccion": reporte.proyecto.direccion if reporte.proyecto else "",
+        "tipo_sistema": reporte.proyecto.tipo_sistema.value if reporte.proyecto else "",
+        "potencia": reporte.checklist.get("datos_proyecto", {}).get("Potencia (kW)", ""),
+    }
+
+    reporte_data = {
+        "created_at": reporte.created_at,
+        "tecnico_nombre": reporte.tecnico.nombre if reporte.tecnico else "",
+    }
+
+    # Generar DOCX
+    generator = DocxGenerator()
+    generator.add_header_with_logo(proyecto_data)
+    generator.add_project_info(proyecto_data, reporte_data)
+
+    # Agregar secciones (simplificado - solo datos básicos)
+    for section_id, section_data in reporte.checklist.items():
+        if section_id != "datos_proyecto" and section_data:
+            section_def = {
+                "titulo": section_id.replace("_", " ").title(),
+                "icono": "📋",
+                "campos": [{"nombre": k, "sin_fotos": True} for k in section_data.keys()],
+            }
+            generator.add_section(section_def, section_data, reporte.fotos or [])
+
+    # Guardar temporalmente
+    docx_bytes = generator.generate()
+    temp_path = tempfile.NamedTemporaryFile(delete=False, suffix=".docx").name
+    with open(temp_path, "wb") as f:
+        f.write(docx_bytes)
+
+    filename = f"Informe_{proyecto_data['nombre']}_{datetime.now().strftime('%Y%m%d')}.docx"
+    return FileResponse(
+        temp_path,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=filename,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
