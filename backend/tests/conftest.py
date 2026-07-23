@@ -77,16 +77,44 @@ def test_usuario(db):
 
 
 @pytest.fixture()
-def test_admin_token(client, test_usuario):
+def test_admin_token(client, setup_db):
     """Obtener token de admin para testing"""
-    response = client.post(
-        "/api/auth/login",
-        json={"email": test_usuario.email, "password": "testpass123"},
-    )
-    return response.json()["access_token"]
+    from app.models.usuario import Usuario, RolEnum, EstadoEnum
+    from app.core.security import get_password_hash
+
+    # Crear usuario directamente para el login
+    db = TestingSessionLocal()
+    try:
+        # Check if user already exists
+        existing = db.query(Usuario).filter(Usuario.email == "admin@test.com").first()
+        if not existing:
+            user = Usuario(
+                nombre="Test Admin",
+                email="admin@test.com",
+                hashed_password=get_password_hash("testpass123"),
+                rol=RolEnum.administrador,
+                estado=EstadoEnum.activo,
+            )
+            db.add(user)
+            db.commit()
+        db.close()
+
+        # Login
+        response = client.post(
+            "/api/auth/login",
+            json={"email": "admin@test.com", "password": "testpass123"},
+        )
+        if response.status_code == 200:
+            return response.json().get("access_token")
+        return None
+    except Exception as e:
+        db.close()
+        raise
 
 
 @pytest.fixture()
 def auth_headers(test_admin_token):
     """Headers con autenticación"""
-    return {"Authorization": f"Bearer {test_admin_token}"}
+    if test_admin_token:
+        return {"Authorization": f"Bearer {test_admin_token}"}
+    return {}

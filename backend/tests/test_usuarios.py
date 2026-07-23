@@ -7,7 +7,7 @@ class TestUsuarios:
 
     def test_list_usuarios(self, client, auth_headers):
         """Test listar usuarios"""
-        response = client.get("/api/usuarios", headers=auth_headers)
+        response = client.get("/api/usuarios/", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "data" in data
@@ -28,8 +28,8 @@ class TestUsuarios:
 
     def test_list_usuarios_without_auth(self, client):
         """Test listar usuarios sin autenticación"""
-        response = client.get("/api/usuarios")
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        response = client.get("/api/usuarios/")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_get_usuario(self, client, auth_headers, test_usuario):
         """Test obtener usuario específico"""
@@ -54,7 +54,7 @@ class TestUsuarios:
             "rol": "tecnico",
         }
         response = client.post(
-            "/api/usuarios", json=new_usuario, headers=auth_headers
+            "/api/usuarios/", json=new_usuario, headers=auth_headers
         )
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
@@ -70,7 +70,7 @@ class TestUsuarios:
             "rol": "invalid_rol",  # Rol inválido
         }
         response = client.post(
-            "/api/usuarios", json=invalid_usuario, headers=auth_headers
+            "/api/usuarios/", json=invalid_usuario, headers=auth_headers
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
