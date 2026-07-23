@@ -1,15 +1,15 @@
 """make visita_id nullable
 
-Revision ID: 006
-Revises: 005
+Revision ID: 009
+Revises: 008
 Create Date: 2026-07-23
 """
 
 from alembic import op
 import sqlalchemy as sa
 
-revision = "006"
-down_revision = "005"
+revision = "009"
+down_revision = "008"
 branch_labels = None
 depends_on = None
 
