@@ -1,7 +1,12 @@
 import axios from 'axios'
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.PUBLIC_API_URL || ''
+console.log('VITE_BACKEND_URL:', import.meta.env.VITE_BACKEND_URL)
+console.log('PUBLIC_API_URL:', import.meta.env.PUBLIC_API_URL)
+console.log('Final baseURL:', backendUrl)
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || '',
+  baseURL: backendUrl,
 })
 
 function getActiveToken() {
