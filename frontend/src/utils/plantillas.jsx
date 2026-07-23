@@ -1,10 +1,10 @@
 import api from '../services/api'
 
 export const DEFAULT_COLORES = {
-  primario: '#0284c7',
-  secundario: '#f0f9ff',
-  texto: '#1f2937',
-  fondo: '#ffffff',
+  primario: '#c86400',
+  secundario: '#fac896',
+  texto: '#323232',
+  fondo: '#fafafa',
 }
 
 export const ESTADOS = [

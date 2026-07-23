@@ -11,6 +11,16 @@ router = APIRouter(prefix="/api/plantillas", tags=["Plantillas de Informe"])
 
 DEFAULT_SECCIONES = [
     {
+        "id": "identificacion",
+        "titulo": "Identificación y Ubicación",
+        "icono": "📍",
+        "campos": [
+            {"nombre": "Código del Proyecto", "tipo": "texto", "placeholder": "Ej: YMYY-01", "sin_fotos": True},
+            {"nombre": "Ubicación general del SSFV", "tipo": "textarea", "placeholder": "Descripción de ubicación...", "sin_fotos": True},
+            {"nombre": "Foto general del sistema", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+        ],
+    },
+    {
         "id": "datos_proyecto",
         "titulo": "Datos del Proyecto",
         "icono": "📁",
@@ -25,13 +35,22 @@ DEFAULT_SECCIONES = [
         ],
     },
     {
+        "id": "objetivo_alcance",
+        "titulo": "Objetivo y Alcance",
+        "icono": "🎯",
+        "campos": [
+            {"nombre": "Objetivo", "tipo": "textarea", "placeholder": "Objetivo del mantenimiento...", "sin_fotos": True},
+            {"nombre": "Alcance de Actividades", "tipo": "textarea", "placeholder": "Alcance del trabajo...", "sin_fotos": True},
+        ],
+    },
+    {
         "id": "modulos",
         "titulo": "Módulos Fotovoltaicos",
         "icono": "☀️",
         "campos": [
-            {"nombre": "Limpieza de módulos", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "Daños visibles (grietas, manchas)", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "Decoloración o amarillamiento", "tipo": "estado", "foto_requerida": True},
+            {"nombre": "Limpieza de módulos", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "Daños visibles (grietas, manchas)", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "Decoloración o amarillamiento", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
             {"nombre": "Notas", "tipo": "textarea", "placeholder": "Observaciones...", "sin_fotos": True},
         ],
     },
@@ -40,9 +59,9 @@ DEFAULT_SECCIONES = [
         "titulo": "Estructura de Soporte",
         "icono": "🏗️",
         "campos": [
-            {"nombre": "Estado general de estructura", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "Corrosión o oxidación", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "Anclajes firmes", "tipo": "estado", "foto_requerida": True},
+            {"nombre": "Estado general de estructura", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "Corrosión o oxidación", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "Anclajes firmes", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
             {"nombre": "Notas", "tipo": "textarea", "placeholder": "Observaciones...", "sin_fotos": True},
         ],
     },
@@ -52,8 +71,8 @@ DEFAULT_SECCIONES = [
         "icono": "⚡",
         "dinamico_inversores": True,
         "campos": [
-            {"nombre": "Funcionamiento", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "Conexiones (entrada/salida)", "tipo": "estado", "foto_requerida": True},
+            {"nombre": "Funcionamiento", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "Conexiones (entrada/salida)", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
             {"nombre": "Temperatura (°C)", "tipo": "numero", "placeholder": "°C", "step": "0.1", "sin_fotos": True},
             {"nombre": "Códigos de error", "tipo": "texto", "placeholder": "Sin errores", "sin_fotos": True},
         ],
@@ -64,13 +83,8 @@ DEFAULT_SECCIONES = [
         "icono": "🔋",
         "dinamico_inversores": True,
         "campos": [
-            {
-                "nombre": "Voltajes por String",
-                "tipo": "grupo_strings",
-                "strings_por_inversor": 6,
-                "sin_fotos": True,
-            },
-            {"nombre": "Foto de mediciones", "tipo": "estado", "foto_requerida": True},
+            {"nombre": "Voltajes por String", "tipo": "grupo_strings", "strings_por_inversor": 6, "sin_fotos": True},
+            {"nombre": "Foto de mediciones", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
         ],
     },
     {
@@ -89,7 +103,7 @@ DEFAULT_SECCIONES = [
                 ],
                 "sin_fotos": True,
             },
-            {"nombre": "Foto de mediciones", "tipo": "estado", "foto_requerida": True},
+            {"nombre": "Foto de mediciones", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
         ],
     },
     {
@@ -97,9 +111,9 @@ DEFAULT_SECCIONES = [
         "titulo": "Protecciones",
         "icono": "🛡️",
         "campos": [
-            {"nombre": "Seccionadores (DC/AC)", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "Breakers y diferenciales", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "SPD/Descargadores", "tipo": "estado", "foto_requerida": True},
+            {"nombre": "Seccionadores (DC/AC)", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "Breakers y diferenciales", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "SPD/Descargadores", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
             {"nombre": "Notas", "tipo": "textarea", "placeholder": "Observaciones...", "sin_fotos": True},
         ],
     },
@@ -117,9 +131,9 @@ DEFAULT_SECCIONES = [
         "titulo": "Cableado",
         "icono": "📡",
         "campos": [
-            {"nombre": "Estado del cableado", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "Aislamiento íntegro", "tipo": "estado", "foto_requerida": True},
-            {"nombre": "Orden y etiquetado", "tipo": "estado", "foto_requerida": True},
+            {"nombre": "Estado del cableado", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "Aislamiento íntegro", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
+            {"nombre": "Orden y etiquetado", "tipo": "estado", "foto_requerida": True, "foto_unica": False},
             {"nombre": "Notas", "tipo": "textarea", "placeholder": "Observaciones...", "sin_fotos": True},
         ],
     },
@@ -131,6 +145,25 @@ DEFAULT_SECCIONES = [
             {"nombre": "Producción Hoy (kWh)", "tipo": "numero", "placeholder": "kWh", "step": "0.1", "sin_fotos": True},
             {"nombre": "Producción Este Mes (kWh)", "tipo": "numero", "placeholder": "kWh", "step": "1", "sin_fotos": True},
             {"nombre": "Notas", "tipo": "textarea", "placeholder": "Observaciones...", "sin_fotos": True},
+        ],
+    },
+    {
+        "id": "novedades",
+        "titulo": "Novedades y Observaciones",
+        "icono": "📝",
+        "campos": [
+            {"nombre": "Novedades encontradas", "tipo": "textarea", "placeholder": "Describe cualquier novedad o problema encontrado...", "sin_fotos": True},
+            {"nombre": "Acciones recomendadas", "tipo": "textarea", "placeholder": "Recomendaciones...", "sin_fotos": True},
+        ],
+    },
+    {
+        "id": "firma",
+        "titulo": "Firma y Validación",
+        "icono": "✍️",
+        "campos": [
+            {"nombre": "Técnico responsable", "tipo": "texto", "placeholder": "Nombre completo", "sin_fotos": True},
+            {"nombre": "Fecha de firma", "tipo": "fecha", "sin_fotos": True},
+            {"nombre": "Firma digital", "tipo": "signature", "sin_fotos": True},
         ],
     },
 ]
