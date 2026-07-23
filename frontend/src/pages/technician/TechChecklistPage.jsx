@@ -353,7 +353,7 @@ export default function TechChecklistPage() {
               <button onClick={() => selectPhoto(secId, campo.nombre, 'antes')}
                 className={`py-2 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 min-h-[36px] ${
                   fotosAntes.length > 0
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200'
+                    ? 'bg-primary-100 text-primary-700 border border-primary-300 hover:bg-primary-200'
                     : 'bg-gray-50 text-gray-600 border border-gray-300 hover:bg-gray-100'
                 }`}>
                 {fotosAntes.length > 0 ? <CheckIcon className="w-3 h-3" /> : <CameraIcon className="w-3 h-3" />} Antes
@@ -362,7 +362,7 @@ export default function TechChecklistPage() {
                 <div className="flex gap-1 flex-wrap">
                   {fotosAntes.map((foto, idx) => (
                     <div key={idx} className="relative w-full">
-                      <img src={foto.url} alt="antes" className="w-full h-16 object-cover rounded border-2 border-blue-300" />
+                      <img src={foto.url} alt="antes" className="w-full h-16 object-cover rounded border-2 border-primary-300" />
                       {!foto.uploaded && <span className="absolute top-0.5 left-0.5 bg-yellow-500 text-white text-[7px] px-0.5 rounded">local</span>}
                       <button onClick={() => deleteFoto(foto.id)}
                         className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-md text-xs">
@@ -430,7 +430,7 @@ export default function TechChecklistPage() {
               className={`w-full py-3 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px] ${
                 fotoUnica.length > 0
                   ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
-                  : 'bg-blue-50 text-blue-600 border border-blue-300 hover:bg-blue-100'
+                  : 'bg-primary-50 text-primary-600 border border-primary-300 hover:bg-primary-100'
               }`}>
               {fotoUnica.length > 0 ? <CheckIcon className="w-4 h-4" /> : <CameraIcon className="w-4 h-4" />} {fotoUnica.length > 0 ? 'Foto Cargada' : 'Cargar Foto'}
             </button>
@@ -487,7 +487,7 @@ export default function TechChecklistPage() {
                     </div>
                     {fotoPerItem && (
                       <button onClick={() => selectPhoto(secId, `${campo.nombre}_${key}`, 'unica')}
-                        className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200">
+                        className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium hover:bg-primary-200">
                         📷
                       </button>
                     )}
@@ -496,7 +496,7 @@ export default function TechChecklistPage() {
                     <div className="mt-2 flex gap-1 flex-wrap">
                       {getFotosForCampo(secId, `${campo.nombre}_${key}`).map((foto) => (
                         <div key={foto.id} className="relative">
-                          <img src={foto.url} alt={itemLabel} className="w-12 h-12 object-cover rounded border border-blue-200" />
+                          <img src={foto.url} alt={itemLabel} className="w-12 h-12 object-cover rounded border border-primary-200" />
                           <button onClick={() => deleteFoto(foto.id)}
                             className="absolute -top-2 -right-2 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">
                             ✕
@@ -535,7 +535,7 @@ export default function TechChecklistPage() {
                   </div>
                   {fotoPerItem && (
                     <button onClick={() => selectPhoto(secId, `${campo.nombre}_${sub.nombre}`, 'unica')}
-                      className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200">
+                      className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium hover:bg-primary-200">
                       📷
                     </button>
                   )}
@@ -544,7 +544,7 @@ export default function TechChecklistPage() {
                   <div className="mt-2 flex gap-1 flex-wrap">
                     {getFotosForCampo(secId, `${campo.nombre}_${sub.nombre}`).map((foto) => (
                       <div key={foto.id} className="relative">
-                        <img src={foto.url} alt={sub.nombre} className="w-12 h-12 object-cover rounded border border-blue-200" />
+                        <img src={foto.url} alt={sub.nombre} className="w-12 h-12 object-cover rounded border border-primary-200" />
                         <button onClick={() => deleteFoto(foto.id)}
                           className="absolute -top-2 -right-2 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">
                           ✕
@@ -664,8 +664,8 @@ export default function TechChecklistPage() {
   const hasDraft = serverReporteId && checklist && Object.keys(checklist).length > 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-      <header className="bg-white shadow-md sticky top-0 z-10 border-b border-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
+      <header className="bg-white shadow-md sticky top-0 z-10 border-b border-primary-100">
         <div className="px-4 py-4">
           <div className="flex items-center justify-between mb-3">
             <button onClick={() => navigate(`/tech/proyecto/${id}`)} className="text-gray-500 hover:text-gray-700 -ml-1 p-2 rounded-lg hover:bg-gray-100 transition-colors">
@@ -703,7 +703,7 @@ export default function TechChecklistPage() {
       </header>
 
       {uploadProgress && (
-        <div className="mx-4 mt-3 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2 bg-blue-50 text-blue-700">
+        <div className="mx-4 mt-3 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2 bg-primary-50 text-primary-700">
           <SpinnerIcon className="w-4 h-4" />
           Subiendo foto {uploadProgress.current + 1} de {uploadProgress.total}...
         </div>
@@ -746,7 +746,7 @@ export default function TechChecklistPage() {
       </div>
 
       <main className="px-4 py-4 pb-32 w-full">
-        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-100">
+        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-100">
           <h2 className="font-bold text-gray-800 text-base mb-0.5">{sec.icono} {sec.titulo}</h2>
           <p className="text-xs text-gray-600">
             {sec.campos?.length || 0} campo{sec.campos?.length !== 1 ? 's' : ''}
@@ -758,7 +758,7 @@ export default function TechChecklistPage() {
 
         <div className="mt-4 flex gap-2">
           <button onClick={handleSave} disabled={saving}
-            className="px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2">
+            className="px-4 py-2.5 min-h-[44px] bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-all flex items-center gap-2">
             {saving ? <SpinnerIcon className="w-4 h-4" /> : saved ? <CheckIcon className="w-4 h-4" /> : <SaveIcon className="w-4 h-4" />}
             {saving ? 'Guardando...' : saved ? 'Guardado' : 'Guardar Sección'}
           </button>

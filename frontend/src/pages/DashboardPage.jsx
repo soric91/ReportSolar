@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4 mb-6 lg:mb-8">
         {[
-          { label: 'Proyectos', value: resumen.total_proyectos, color: 'bg-blue-500' },
+          { label: 'Proyectos', value: resumen.total_proyectos, color: 'bg-primary-500' },
           { label: 'Técnicos', value: resumen.total_tecnicos, color: 'bg-green-500' },
           { label: 'Pendientes', value: resumen.visitas_pendientes, color: 'bg-yellow-500' },
           { label: 'En Progreso', value: resumen.visitas_en_progreso, color: 'bg-orange-500' },
@@ -100,7 +100,7 @@ export default function DashboardPage() {
                   <div key={i} className="flex items-center gap-2">
                     <span className="text-xs text-gray-600 w-28 truncate">{p.proyecto}</span>
                     <div className="flex-1 bg-gray-100 rounded-full h-4">
-                      <div className="bg-blue-500 h-4 rounded-full flex items-center justify-end pr-2" style={{ width: `${(p.reportes / maxP) * 100}%` }}>
+                      <div className="bg-primary-500 h-4 rounded-full flex items-center justify-end pr-2" style={{ width: `${(p.reportes / maxP) * 100}%` }}>
                         <span className="text-[10px] text-white font-medium">{p.reportes}</span>
                       </div>
                     </div>

@@ -253,7 +253,7 @@ export default function PlantillasPage() {
                               </div>
 
                               {campo.tipo === 'grupo_strings' && (
-                                <div className="mt-2 pl-2 border-l-2 border-blue-200">
+                                <div className="mt-2 pl-2 border-l-2 border-primary-200">
                                   <div className="flex items-center gap-2 mb-1">
                                     <label className="text-xs text-gray-500">Strings por inversor:</label>
                                     <input type="number" value={campo.strings_por_inversor || 6} onChange={(e) => updateCampo(si, ci, 'strings_por_inversor', parseInt(e.target.value) || 6)} className="w-16 px-2 py-1 border rounded text-xs" min="1" max="24" />
@@ -309,7 +309,7 @@ export default function PlantillasPage() {
                           ))}
                           <div className="flex gap-2">
                             <button type="button" onClick={() => addCampo(si)} className="text-xs text-primary-600 hover:text-primary-800">+ Campo</button>
-                            <button type="button" onClick={() => addCampoGrupoStrings(si)} className="text-xs text-blue-600 hover:text-blue-800">+ Grupo Strings</button>
+                            <button type="button" onClick={() => addCampoGrupoStrings(si)} className="text-xs text-primary-600 hover:text-primary-800">+ Grupo Strings</button>
                             <button type="button" onClick={() => addCampoGrupoVoltajes(si)} className="text-xs text-green-600 hover:text-green-800">+ Grupo Voltajes</button>
                           </div>
                         </div>
@@ -364,8 +364,8 @@ export default function PlantillasPage() {
                       {sec.campos?.map((campo, ci) => (
                         <div key={ci} className="text-xs">
                           {campo.tipo === 'grupo_strings' ? (
-                            <div className="border border-blue-100 rounded p-2 bg-blue-50/50">
-                              <span className="font-medium text-blue-700">{campo.nombre}</span>
+                            <div className="border border-primary-100 rounded p-2 bg-primary-50/50">
+                              <span className="font-medium text-primary-700">{campo.nombre}</span>
                               <div className="mt-1 text-gray-500">
                                 [Grid de {campo.strings_por_inversor || 6} strings por inversor]
                               </div>

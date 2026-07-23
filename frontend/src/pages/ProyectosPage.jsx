@@ -159,7 +159,7 @@ export default function ProyectosPage() {
                   </td>
                   <td className="px-3 lg:px-4 py-2 lg:py-3 text-gray-600 text-xs lg:text-sm hidden sm:table-cell">{p.cliente}</td>
                   <td className="px-3 lg:px-4 py-2 lg:py-3">
-                    <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">{tipoLabels[p.tipo_sistema]}</span>
+                    <span className="px-2 py-1 rounded-full text-xs bg-primary-100 text-primary-700">{tipoLabels[p.tipo_sistema]}</span>
                   </td>
                   <td className="px-3 lg:px-4 py-2 lg:py-3 hidden md:table-cell">
                     {p.plantilla_nombre ? (
