@@ -1,12 +1,12 @@
 import redis
+import logging
 from app.core.config import get_settings
-from datetime import timedelta
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
-redis_client = redis.Redis(
-    host=settings.REDIS_HOST,
-    port=settings.REDIS_PORT,
+redis_client = redis.from_url(
+    settings.REDIS_URL,
     db=0,
     decode_responses=True,
     socket_connect_timeout=5,
@@ -21,8 +21,7 @@ def blacklist_token(token: str, ttl: int = None):
             ttl = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         redis_client.setex(f"token_blacklist:{token}", ttl, "revoked")
     except Exception as e:
-        # Log error but don't fail - token validation still works
-        print(f"Error blacklisting token: {e}")
+        logger.error(f"Error blacklisting token: {e}")
 
 
 def is_token_blacklisted(token: str) -> bool:
@@ -31,8 +30,7 @@ def is_token_blacklisted(token: str) -> bool:
         result = redis_client.get(f"token_blacklist:{token}")
         return result is not None
     except Exception as e:
-        # If Redis is down, don't block access - security tradeoff
-        print(f"Error checking blacklist: {e}")
+        logger.warning(f"Redis blacklist check failed: {e}")
         return False
 
 

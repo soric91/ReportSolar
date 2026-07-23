@@ -10,8 +10,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
-    REDIS_HOST: str = "redis"
-    REDIS_PORT: int = 6379
+    REDIS_URL: str = "redis://redis:6379"
     # Admin - Credenciales iniciales
     ADMIN_EMAIL: str = ""
     ADMIN_PASSWORD: str = ""
