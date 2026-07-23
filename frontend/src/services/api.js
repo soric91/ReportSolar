@@ -48,7 +48,7 @@ api.interceptors.response.use(
 
       if (refreshToken && storeName) {
         try {
-          const response = await axios.post('/api/auth/refresh', {
+          const response = await api.post('/api/auth/refresh', {
             refresh_token: refreshToken,
           })
           const newToken = response.data.access_token
