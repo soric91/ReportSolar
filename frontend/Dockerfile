@@ -2,6 +2,8 @@ FROM node:18-alpine as build
 
 WORKDIR /app
 
+ARG VITE_BACKEND_URL
+
 COPY frontend/package*.json .
 RUN npm ci
 
