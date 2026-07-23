@@ -22,10 +22,12 @@
 - Name: `backend`
 - Dockerfile: `backend/Dockerfile`
 - Port: 8002
+- Link: PostgreSQL (auto-injects DATABASE_URL)
+- Link: Redis (auto-injects REDIS_URL)
 - Environment variables:
   ```
-  DATABASE_URL=${DATABASE_URL}
-  REDIS_URL=${REDIS_URL}
+  DATABASE_URL=${DATABASE_URL}          # Auto-injected by PostgreSQL link
+  REDIS_URL=${REDIS_URL}                # Auto-injected by Redis link
   SECRET_KEY=<generate-secure-key>
   ALGORITHM=HS256
   ACCESS_TOKEN_EXPIRE_MINUTES=30
