@@ -38,7 +38,7 @@ class FotoUploadRequest(BaseModel):
 
 
 class ReporteCreateRequest(BaseModel):
-    visita_id: int
+    visita_id: Optional[int] = None
     proyecto_id: int
     checklist: dict = {}
     observaciones: str = ""
@@ -49,7 +49,7 @@ class ReporteCreateRequest(BaseModel):
 
 class ReporteDetailResponse(BaseModel):
     id: int
-    visita_id: int
+    visita_id: Optional[int] = None
     tecnico_id: int
     proyecto_id: int
     tecnico_nombre: str = ""
