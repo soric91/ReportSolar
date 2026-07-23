@@ -35,6 +35,6 @@ class Proyecto(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     tecnicos = relationship(
-        "Usuario", secondary=proyecto_tecnico, back_populates="proyectos"
+        "Usuario", secondary="proyecto_tecnico", back_populates="proyectos"
     )
     plantilla = relationship("PlantillaInforme", back_populates="proyectos")
