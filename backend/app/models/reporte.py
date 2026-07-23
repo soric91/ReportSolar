@@ -8,7 +8,7 @@ class Reporte(Base):
     __tablename__ = "reportes"
 
     id = Column(Integer, primary_key=True, index=True)
-    visita_id = Column(Integer, ForeignKey("visitas.id"), nullable=False)
+    visita_id = Column(Integer, ForeignKey("visitas.id"), nullable=True)
     tecnico_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     proyecto_id = Column(Integer, ForeignKey("proyectos.id"), nullable=False)
     checklist = Column(JSON, default=dict)
