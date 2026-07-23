@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { plantillasService } from '../services/plantillasService'
 import { loadDefaultSecciones, getDefaultSeccionesSync, DEFAULT_COLORES } from '../utils/plantillas'
+import Modal from '../components/Modal'
 
 export default function PlantillasPage() {
   const [plantillas, setPlantillas] = useState([])
@@ -11,6 +12,7 @@ export default function PlantillasPage() {
   const [selectedPlantilla, setSelectedPlantilla] = useState(null)
   const [form, setForm] = useState({ nombre: '', descripcion: '', secciones: [], colores: DEFAULT_COLORES })
   const [error, setError] = useState('')
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'alert' })
 
   const loadPlantillas = async () => {
     try {
@@ -63,13 +65,20 @@ export default function PlantillasPage() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar esta plantilla?')) return
-    try {
-      await plantillasService.delete(id)
-      loadPlantillas()
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Error al eliminar')
-    }
+    setModal({
+      isOpen: true,
+      title: 'Eliminar plantilla',
+      message: '¿Estás seguro que deseas eliminar esta plantilla?',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await plantillasService.delete(id)
+          loadPlantillas()
+        } catch (err) {
+          setError(err.response?.data?.detail || 'Error al eliminar')
+        }
+      }
+    })
   }
 
   const addSeccion = () => {
@@ -392,6 +401,16 @@ export default function PlantillasPage() {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        confirmText="Eliminar"
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        onConfirm={modal.onConfirm}
+      />
     </div>
   )
 }

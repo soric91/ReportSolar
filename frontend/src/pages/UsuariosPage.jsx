@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { usuariosService } from '../services/usuariosService'
+import Modal from '../components/Modal'
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState([])
@@ -11,6 +12,7 @@ export default function UsuariosPage() {
   const [form, setForm] = useState({ nombre: '', email: '', password: '', rol: 'tecnico' })
   const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState('')
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'alert' })
 
   const loadUsuarios = async () => {
     try {
@@ -57,23 +59,37 @@ export default function UsuariosPage() {
   }
 
   const handleDeactivate = async (id) => {
-    if (!confirm('¿Desactivar este usuario?')) return
-    try {
-      await usuariosService.deactivate(id)
-      loadUsuarios()
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Error al desactivar')
-    }
+    setModal({
+      isOpen: true,
+      title: 'Desactivar usuario',
+      message: '¿Estás seguro que deseas desactivar este usuario?',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await usuariosService.deactivate(id)
+          loadUsuarios()
+        } catch (err) {
+          setError(err.response?.data?.detail || 'Error al desactivar')
+        }
+      }
+    })
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar este usuario permanentemente? Esta acción no se puede deshacer.')) return
-    try {
-      await usuariosService.delete(id)
-      loadUsuarios()
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Error al eliminar')
-    }
+    setModal({
+      isOpen: true,
+      title: 'Eliminar usuario',
+      message: '¿Eliminar este usuario permanentemente? Esta acción no se puede deshacer.',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await usuariosService.delete(id)
+          loadUsuarios()
+        } catch (err) {
+          setError(err.response?.data?.detail || 'Error al eliminar')
+        }
+      }
+    })
   }
 
   const handleResetPassword = async (e) => {
@@ -203,6 +219,16 @@ export default function UsuariosPage() {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        confirmText={modal.type === 'confirm' ? 'Confirmar' : 'Aceptar'}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        onConfirm={modal.onConfirm}
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { reportesService } from '../services/reportesService'
 import { plantillasService } from '../services/plantillasService'
 import { loadDefaultSecciones, getDefaultSeccionesSync } from '../utils/plantillas'
 import { pdfGeneratorService } from '../services/pdfGeneratorService'
+import Modal from '../components/Modal'
 
 const ESTADO_COLORS = {
   ok: 'bg-green-100 text-green-700 border-green-200',
@@ -88,6 +89,7 @@ export default function ReportesPage() {
   const [previewFoto, setPreviewFoto] = useState(null)
   const [exporting, setExporting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'alert' })
   const pdfRef = useRef(null)
   const ITEMS_PER_PAGE = 15
 
@@ -125,14 +127,21 @@ export default function ReportesPage() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar este informe?')) return
-    try {
-      await reportesService.delete(id)
-      setReportes(reportes.filter(r => r.id !== id))
-      setShowDetail(false)
-    } catch (err) {
-      setError('Error al eliminar')
-    }
+    setModal({
+      isOpen: true,
+      title: 'Eliminar informe',
+      message: '¿Estás seguro que deseas eliminar este informe?',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await reportesService.delete(id)
+          setReportes(reportes.filter(r => r.id !== id))
+          setShowDetail(false)
+        } catch (err) {
+          setError('Error al eliminar')
+        }
+      }
+    })
   }
 
   const handleExportPDF = async () => {
@@ -465,6 +474,16 @@ export default function ReportesPage() {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        confirmText="Eliminar"
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        onConfirm={modal.onConfirm}
+      />
     </div>
   )
 }

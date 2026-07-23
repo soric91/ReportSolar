@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { proyectosService } from '../services/proyectosService'
 import { usuariosService } from '../services/usuariosService'
 import { plantillasService } from '../services/plantillasService'
+import Modal from '../components/Modal'
 
 export default function ProyectosPage() {
   const [proyectos, setProyectos] = useState([])
@@ -15,6 +16,7 @@ export default function ProyectosPage() {
   const [asignarProyectoId, setAsignarProyectoId] = useState(null)
   const [form, setForm] = useState({ nombre: '', cliente: '', direccion: '', tipo_sistema: 'on_grid', componentes: {}, plantilla_id: null, tecnicos_ids: [] })
   const [error, setError] = useState('')
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'alert' })
 
   const loadData = async () => {
     try {
@@ -71,13 +73,20 @@ export default function ProyectosPage() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar este proyecto?')) return
-    try {
-      await proyectosService.delete(id)
-      loadData()
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Error al eliminar')
-    }
+    setModal({
+      isOpen: true,
+      title: 'Eliminar proyecto',
+      message: '¿Estás seguro que deseas eliminar este proyecto?',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await proyectosService.delete(id)
+          loadData()
+        } catch (err) {
+          setError(err.response?.data?.detail || 'Error al eliminar')
+        }
+      }
+    })
   }
 
   const handleAsignar = async (tecnicoId) => {
@@ -282,6 +291,16 @@ export default function ProyectosPage() {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        confirmText="Eliminar"
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        onConfirm={modal.onConfirm}
+      />
     </div>
   )
 }
