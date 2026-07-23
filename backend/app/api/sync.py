@@ -42,28 +42,6 @@ def sync_proyectos(
         .all()
     )
 
-    # Ensure each proyecto has exactly one active borrador
-    for p in proyectos:
-        existing_borrador = (
-            db.query(Reporte)
-            .filter(
-                Reporte.proyecto_id == p.id,
-                Reporte.tecnico_id == current_user.id,
-                Reporte.estado == "borrador",
-            )
-            .first()
-        )
-        if not existing_borrador:
-            new_reporte = Reporte(
-                proyecto_id=p.id,
-                tecnico_id=current_user.id,
-                visita_id=None,
-                estado="borrador",
-                checklist={},
-            )
-            db.add(new_reporte)
-    db.commit()
-
     return SyncResponse(
         proyectos=[
             ProyectoSync(
