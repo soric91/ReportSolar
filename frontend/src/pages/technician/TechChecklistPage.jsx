@@ -456,9 +456,6 @@ export default function TechChecklistPage() {
 
   const renderCampo = (secId, campo, idx) => {
     const val = checklist[secId]?.[campo.nombre] || ''
-    if (idx === 0 && secId === 'datos_proyecto') {
-      console.log(`🔍 renderCampo: secId=${secId}, campo=${campo.nombre}, val=${val}, secData=`, checklist[secId])
-    }
 
     if (campo.tipo === 'grupo_strings') {
       const numInv = proyecto?.componentes?.inversores || 1
