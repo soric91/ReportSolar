@@ -73,6 +73,25 @@ export default function TechProyectoPage() {
 
   const crearVisita = async () => {
     try {
+      // Check for existing borrador
+      try {
+        const apiRes = await reportesService.list({ proyecto_id: parseInt(id) })
+        const all = apiRes.data?.data || apiRes.data || []
+        const borrador = all.find(r => r.estado === 'borrador')
+        if (borrador) {
+          alert('Ya existe un borrador en proceso. Termina o elimina ese primero.')
+          return
+        }
+      } catch (apiErr) {
+        // If API fails, check local storage for pending borradores
+        const pending = JSON.parse(localStorage.getItem('solar-pending-sync') || '[]')
+        const pendingBorrador = pending.find(p => p.proyecto_id === parseInt(id) && p.reporte_estado === 'borrador')
+        if (pendingBorrador) {
+          alert('Ya existe un borrador en proceso. Termina o elimina ese primero.')
+          return
+        }
+      }
+
       const visitaId = await db.saveVisita({
         proyecto_id: parseInt(id),
         fecha,
