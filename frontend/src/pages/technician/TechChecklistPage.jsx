@@ -339,33 +339,59 @@ export default function TechChecklistPage() {
 
     const campoFotos = getFotosForCampo(secId, campo)
     const fotosAntes = campoFotos.filter(f => f.tipo === 'antes')
+    const fotosDurante = campoFotos.filter(f => f.tipo === 'durante')
     const fotosDespues = campoFotos.filter(f => f.tipo === 'despues')
     const fotoUnica = campoFotos.filter(f => f.tipo === 'foto_unica')
 
     return (
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <h5 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5"><CameraIcon className="w-3.5 h-3.5" /> {campo.foto_requerida ? 'Fotos (Antes/Después)' : 'Foto'}</h5>
+        <h5 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5"><CameraIcon className="w-3.5 h-3.5" /> {campo.foto_requerida ? 'Fotos (Antes/Durante/Después)' : 'Foto'}</h5>
 
         {campo.foto_requerida ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <div className="flex flex-col gap-2">
               <button onClick={() => selectPhoto(secId, campo.nombre, 'antes')}
-                className={`py-3 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 min-h-[44px] ${
+                className={`py-2 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 min-h-[36px] ${
                   fotosAntes.length > 0
                     ? 'bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200'
                     : 'bg-gray-50 text-gray-600 border border-gray-300 hover:bg-gray-100'
                 }`}>
-                {fotosAntes.length > 0 ? <CheckIcon className="w-4 h-4" /> : <CameraIcon className="w-4 h-4" />} Antes
+                {fotosAntes.length > 0 ? <CheckIcon className="w-3 h-3" /> : <CameraIcon className="w-3 h-3" />} Antes
               </button>
               {fotosAntes.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-1 flex-wrap">
                   {fotosAntes.map((foto, idx) => (
                     <div key={idx} className="relative w-full">
-                      <img src={foto.url} alt="antes" className="w-full h-24 object-cover rounded-lg border-2 border-blue-300" />
-                      {!foto.uploaded && <span className="absolute top-1 left-1 bg-yellow-500 text-white text-[8px] px-1 rounded">local</span>}
+                      <img src={foto.url} alt="antes" className="w-full h-16 object-cover rounded border-2 border-blue-300" />
+                      {!foto.uploaded && <span className="absolute top-0.5 left-0.5 bg-yellow-500 text-white text-[7px] px-0.5 rounded">local</span>}
                       <button onClick={() => deleteFoto(foto.id)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center shadow-md">
-                        <XIcon className="w-3.5 h-3.5" />
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-md text-xs">
+                        <XIcon className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button onClick={() => selectPhoto(secId, campo.nombre, 'durante')}
+                className={`py-2 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 min-h-[36px] ${
+                  fotosDurante.length > 0
+                    ? 'bg-purple-100 text-purple-700 border border-purple-300 hover:bg-purple-200'
+                    : 'bg-gray-50 text-gray-600 border border-gray-300 hover:bg-gray-100'
+                }`}>
+                {fotosDurante.length > 0 ? <CheckIcon className="w-3 h-3" /> : <CameraIcon className="w-3 h-3" />} Durante
+              </button>
+              {fotosDurante.length > 0 && (
+                <div className="flex gap-1 flex-wrap">
+                  {fotosDurante.map((foto, idx) => (
+                    <div key={idx} className="relative w-full">
+                      <img src={foto.url} alt="durante" className="w-full h-16 object-cover rounded border-2 border-purple-300" />
+                      {!foto.uploaded && <span className="absolute top-0.5 left-0.5 bg-yellow-500 text-white text-[7px] px-0.5 rounded">local</span>}
+                      <button onClick={() => deleteFoto(foto.id)}
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-md text-xs">
+                        <XIcon className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   ))}
@@ -375,22 +401,22 @@ export default function TechChecklistPage() {
 
             <div className="flex flex-col gap-2">
               <button onClick={() => selectPhoto(secId, campo.nombre, 'despues')}
-                className={`py-3 px-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 min-h-[44px] ${
+                className={`py-2 px-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 min-h-[36px] ${
                   fotosDespues.length > 0
                     ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
                     : 'bg-gray-50 text-gray-600 border border-gray-300 hover:bg-gray-100'
                 }`}>
-                {fotosDespues.length > 0 ? <CheckIcon className="w-4 h-4" /> : <CameraIcon className="w-4 h-4" />} Después
+                {fotosDespues.length > 0 ? <CheckIcon className="w-3 h-3" /> : <CameraIcon className="w-3 h-3" />} Después
               </button>
               {fotosDespues.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-1 flex-wrap">
                   {fotosDespues.map((foto, idx) => (
                     <div key={idx} className="relative w-full">
-                      <img src={foto.url} alt="despues" className="w-full h-24 object-cover rounded-lg border-2 border-green-300" />
-                      {!foto.uploaded && <span className="absolute top-1 left-1 bg-yellow-500 text-white text-[8px] px-1 rounded">local</span>}
+                      <img src={foto.url} alt="despues" className="w-full h-16 object-cover rounded border-2 border-green-300" />
+                      {!foto.uploaded && <span className="absolute top-0.5 left-0.5 bg-yellow-500 text-white text-[7px] px-0.5 rounded">local</span>}
                       <button onClick={() => deleteFoto(foto.id)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center shadow-md">
-                        <XIcon className="w-3.5 h-3.5" />
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center shadow-md text-xs">
+                        <XIcon className="w-2.5 h-2.5" />
                       </button>
                     </div>
                   ))}
