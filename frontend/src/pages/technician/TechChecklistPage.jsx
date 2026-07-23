@@ -92,7 +92,17 @@ export default function TechChecklistPage() {
           setFotos(fotosConId)
           setServerReporteId(reporteData.id)
         } else {
-          console.log('⚠️ No hay reporte para cargar')
+          // Pre-fill proyecto data for new informe
+          if (p) {
+            setChecklist({
+              datos_proyecto: {
+                Cliente: p.cliente || '',
+                Dirección: p.direccion || '',
+                'Tipo de Sistema': p.tipo_sistema || '',
+                Técnico: p.tecnicos?.[0]?.nombre || '',
+              }
+            })
+          }
         }
       } catch (err) {
         console.error('Error cargando:', err)
@@ -128,7 +138,6 @@ export default function TechChecklistPage() {
     try {
       // Primero, sube las fotos no subidas
       const fotosNoSubidas = fotos.filter(f => !f.uploaded && f.dataUrl)
-      console.log(`📸 Subiendo ${fotosNoSubidas.length} fotos a Supabase...`)
 
       let subidas = 0
       for (const foto of fotosNoSubidas) {
