@@ -4,6 +4,7 @@ import { db } from '../../services/db'
 import { reportesService } from '../../services/reportesService'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { ArrowLeftIcon, PlusIcon, TrashIcon, CheckCircleIcon, ClockIcon, WifiOffIcon } from '../../components/icons'
+import Modal from '../../components/Modal'
 
 export default function TechProyectoPage() {
   const { id } = useParams()
@@ -12,6 +13,7 @@ export default function TechProyectoPage() {
   const [visitas, setVisitas] = useState([])
   const [showNuevaVisita, setShowNuevaVisita] = useState(false)
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
+  const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'alert' })
   const isOnline = useOnlineStatus()
 
   useEffect(() => {
@@ -79,7 +81,13 @@ export default function TechProyectoPage() {
         const all = apiRes.data?.data || apiRes.data || []
         const borrador = all.find(r => r.estado === 'borrador')
         if (borrador) {
-          alert('Ya existe un borrador en proceso. Termina o elimina ese primero.')
+          setModal({
+            isOpen: true,
+            title: 'Borrador en proceso',
+            message: 'Ya existe un borrador en proceso. Termina o elimina ese primero.',
+            type: 'alert',
+            onConfirm: null
+          })
           return
         }
       } catch (apiErr) {
@@ -87,7 +95,13 @@ export default function TechProyectoPage() {
         const pending = JSON.parse(localStorage.getItem('solar-pending-sync') || '[]')
         const pendingBorrador = pending.find(p => p.proyecto_id === parseInt(id) && p.reporte_estado === 'borrador')
         if (pendingBorrador) {
-          alert('Ya existe un borrador en proceso. Termina o elimina ese primero.')
+          setModal({
+            isOpen: true,
+            title: 'Borrador en proceso',
+            message: 'Ya existe un borrador en proceso. Termina o elimina ese primero.',
+            type: 'alert',
+            onConfirm: null
+          })
           return
         }
       }
@@ -104,7 +118,13 @@ export default function TechProyectoPage() {
       navigate(`/tech/checklist/${id}/${visitaId}`)
     } catch (err) {
       console.error('Error creando visita:', err)
-      alert('Error al crear la visita')
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: 'Error al crear la visita',
+        type: 'alert',
+        onConfirm: null
+      })
     }
   }
 
@@ -113,15 +133,28 @@ export default function TechProyectoPage() {
   }
 
   const deleteVisita = async (visita) => {
-    if (!confirm('¿Eliminar este borrador?')) return
-    try {
-      await db.updateVisita({ ...visita, estado: 'eliminada' })
-      const v = await db.getVisitasByProyecto(parseInt(id))
-      setVisitas(v.filter(vis => vis.estado !== 'eliminada'))
-    } catch (err) {
-      console.error('Error eliminando visita:', err)
-      alert('Error al eliminar la visita')
-    }
+    setModal({
+      isOpen: true,
+      title: 'Eliminar borrador',
+      message: '¿Estás seguro que deseas eliminar este borrador?',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await db.updateVisita({ ...visita, estado: 'eliminada' })
+          const v = await db.getVisitasByProyecto(parseInt(id))
+          setVisitas(v.filter(vis => vis.estado !== 'eliminada'))
+        } catch (err) {
+          console.error('Error eliminando visita:', err)
+          setModal({
+            isOpen: true,
+            title: 'Error',
+            message: 'Error al eliminar la visita',
+            type: 'alert',
+            onConfirm: null
+          })
+        }
+      }
+    })
   }
 
   if (!proyecto) return <div className="p-4 text-center text-gray-400">Cargando...</div>
@@ -214,6 +247,16 @@ export default function TechProyectoPage() {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        confirmText={modal.type === 'confirm' ? 'Eliminar' : 'Aceptar'}
+        onClose={() => setModal({ ...modal, isOpen: false })}
+        onConfirm={modal.onConfirm}
+      />
     </div>
   )
 }
