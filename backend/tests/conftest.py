@@ -5,6 +5,13 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import Base, get_db
 
+# Import models to register them with Base
+from app.models.usuario import Usuario
+from app.models.proyecto import Proyecto
+from app.models.plantilla import PlantillaInforme
+from app.models.reporte import Reporte
+from app.models.visita import Visita
+
 # Test database URL (in-memory SQLite)
 TEST_DATABASE_URL = "sqlite:///./test.db"
 
@@ -27,11 +34,22 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
+@pytest.fixture(autouse=True)
+def setup_db():
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
+
+
 @pytest.fixture()
 def db():
-    Base.metadata.create_all(bind=engine)
-    yield TestingSessionLocal()
-    Base.metadata.drop_all(bind=engine)
+    return TestingSessionLocal()
+
+
+@pytest.fixture()
+def db_session():
+    """Alias para db para compatibilidad con tests existentes"""
+    return TestingSessionLocal()
 
 
 @pytest.fixture()

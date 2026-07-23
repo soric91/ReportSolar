@@ -26,7 +26,7 @@ def test_create_reporte(db_session: Session, client: TestClient):
         nombre="Proyecto Test",
         cliente="Cliente Test",
         direccion="Dirección Test",
-        tipo_sistema="On-Grid",
+        tipo_sistema="on_grid",
     )
     db_session.add(proyecto)
     db_session.commit()
