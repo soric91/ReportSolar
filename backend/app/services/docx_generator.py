@@ -5,7 +5,16 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from io import BytesIO
 import base64
-from datetime import datetime
+from datetime import date, datetime
+
+
+def formatear_fecha(valor) -> str:
+    """Fecha como YYYY-MM-DD, llegue como datetime o como texto ISO."""
+    if not valor:
+        return ""
+    if isinstance(valor, (datetime, date)):
+        return valor.strftime("%Y-%m-%d")
+    return str(valor)[:10]
 
 
 class DocxGenerator:
@@ -65,7 +74,7 @@ class DocxGenerator:
             ("Dirección", proyecto.get("direccion", "")),
             ("Tipo de Sistema", proyecto.get("tipo_sistema", "")),
             ("Potencia (kW)", proyecto.get("potencia", "")),
-            ("Fecha de Visita", str(reporte.get("created_at", "")[:10])),
+            ("Fecha de Visita", formatear_fecha(reporte.get("created_at"))),
             ("Técnico", reporte.get("tecnico_nombre", "")),
         ]
 

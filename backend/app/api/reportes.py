@@ -354,7 +354,7 @@ def export_reporte_docx(
         "cliente": reporte.proyecto.cliente if reporte.proyecto else "",
         "direccion": reporte.proyecto.direccion if reporte.proyecto else "",
         "tipo_sistema": reporte.proyecto.tipo_sistema.value if reporte.proyecto else "",
-        "potencia": reporte.checklist.get("datos_proyecto", {}).get("Potencia (kW)", ""),
+        "potencia": (reporte.checklist or {}).get("datos_proyecto", {}).get("Potencia (kW)", ""),
     }
 
     reporte_data = {
@@ -368,7 +368,7 @@ def export_reporte_docx(
     generator.add_project_info(proyecto_data, reporte_data)
 
     # Agregar secciones (simplificado - solo datos básicos)
-    for section_id, section_data in reporte.checklist.items():
+    for section_id, section_data in (reporte.checklist or {}).items():
         if section_id != "datos_proyecto" and section_data:
             section_def = {
                 "titulo": section_id.replace("_", " ").title(),
