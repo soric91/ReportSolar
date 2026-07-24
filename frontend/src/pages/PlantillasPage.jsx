@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { plantillasService } from '../services/plantillasService'
-import { loadDefaultSecciones, getDefaultSeccionesSync, DEFAULT_COLORES } from '../utils/plantillas'
+import { loadDefaultSecciones, getDefaultSeccionesSync, DEFAULT_COLORES, MODO_FOTOS, MODO_FOTOS_OPCIONES, getModoFotos, flagsParaModoFotos } from '../utils/plantillas'
 import Modal from '../components/Modal'
 
 export default function PlantillasPage() {
@@ -97,7 +97,7 @@ export default function PlantillasPage() {
 
   const addCampo = (seccionIdx) => {
     const updated = [...form.secciones]
-    updated[seccionIdx].campos = [...updated[seccionIdx].campos, { nombre: 'Nuevo Campo', tipo: 'estado', foto_unica: true }]
+    updated[seccionIdx].campos = [...updated[seccionIdx].campos, { nombre: 'Nuevo Campo', tipo: 'estado', ...flagsParaModoFotos(MODO_FOTOS.UNICA) }]
     setForm({ ...form, secciones: updated })
   }
 
@@ -161,10 +161,16 @@ export default function PlantillasPage() {
     setForm({ ...form, secciones: updated })
   }
 
-  const getPhotoConfig = (tipo) => {
-    if (tipo === 'estado') return { key: 'foto_unica', label: 'Foto única', defaultVal: true }
-    if (['texto', 'numero', 'textarea', 'fecha'].includes(tipo)) return { key: 'sin_fotos', label: 'Sin fotos', defaultVal: false }
-    return null
+  // Los grupos (strings/voltajes) manejan sus fotos por ítem, no con el modo del campo
+  const TIPOS_CON_MODO_FOTOS = ['texto', 'numero', 'estado', 'fecha', 'textarea']
+
+  const updateModoFotos = (seccionIdx, campoIdx, modo) => {
+    const updated = [...form.secciones]
+    updated[seccionIdx].campos[campoIdx] = {
+      ...updated[seccionIdx].campos[campoIdx],
+      ...flagsParaModoFotos(modo),
+    }
+    setForm({ ...form, secciones: updated })
   }
 
   if (loading) return <div className="text-center py-8">Cargando...</div>
@@ -290,21 +296,20 @@ export default function PlantillasPage() {
                                 </div>
                               )}
 
-                              {(() => {
-                                const photoConfig = getPhotoConfig(campo.tipo)
-                                if (!photoConfig) return null
-                                return (
-                                  <label className="flex items-center gap-1 text-xs text-gray-500 mt-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={campo[photoConfig.key] ?? photoConfig.defaultVal}
-                                      onChange={(e) => updateCampo(si, ci, photoConfig.key, e.target.checked)}
-                                      className="rounded"
-                                    />
-                                    {photoConfig.label}
-                                  </label>
-                                )
-                              })()}
+                              {TIPOS_CON_MODO_FOTOS.includes(campo.tipo) && (
+                                <label className="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                                  <span className="shrink-0">Fotos:</span>
+                                  <select
+                                    value={getModoFotos(campo)}
+                                    onChange={(e) => updateModoFotos(si, ci, e.target.value)}
+                                    className="flex-1 px-2 py-1 border rounded text-xs"
+                                  >
+                                    {MODO_FOTOS_OPCIONES.map((op) => (
+                                      <option key={op.value} value={op.value}>{op.label}</option>
+                                    ))}
+                                  </select>
+                                </label>
+                              )}
                             </div>
                           ))}
                           <div className="flex gap-2">
@@ -387,8 +392,9 @@ export default function PlantillasPage() {
                             <div className="flex items-center gap-2">
                               <span className="text-gray-500">{campo.nombre}:</span>
                               <span className="text-gray-300">________</span>
-                              {campo.foto_unica && <span className="text-[10px] text-green-500">(📷 foto única)</span>}
-                              {campo.sin_fotos && <span className="text-[10px] text-gray-400">(sin fotos)</span>}
+                              {getModoFotos(campo) === MODO_FOTOS.UNICA && <span className="text-[10px] text-green-500">(📷 una foto)</span>}
+                              {getModoFotos(campo) === MODO_FOTOS.TRIPLE && <span className="text-[10px] text-blue-500">(📷 antes/durante/después)</span>}
+                              {getModoFotos(campo) === MODO_FOTOS.NINGUNA && <span className="text-[10px] text-gray-400">(sin fotos)</span>}
                             </div>
                           )}
                         </div>

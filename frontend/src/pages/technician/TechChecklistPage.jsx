@@ -4,7 +4,7 @@ import { db } from '../../services/db'
 import { syncService } from '../../services/syncService'
 import { uploadService } from '../../services/uploadService'
 import { reportesService } from '../../services/reportesService'
-import { loadDefaultSecciones, getDefaultSeccionesSync, ESTADOS, mergeSeccionesWithDefaults } from '../../utils/plantillas'
+import { loadDefaultSecciones, getDefaultSeccionesSync, ESTADOS, mergeSeccionesWithDefaults, MODO_FOTOS, getModoFotos } from '../../utils/plantillas'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { ArrowLeftIcon, TrashIcon, CameraIcon, CheckIcon, XIcon, SaveIcon, SpinnerIcon, WifiOffIcon } from '../../components/icons'
 import Modal from '../../components/Modal'
@@ -386,11 +386,11 @@ export default function TechChecklistPage() {
   }
 
   const renderFotoSection = (secId, campo) => {
-    if (campo.sin_fotos) return null
-    const tienePhoto = campo.foto_requerida || campo.foto_unica
-    if (!tienePhoto) return null
+    const modo = getModoFotos(campo)
+    if (modo === MODO_FOTOS.NINGUNA) return null
+    const modoTriple = modo === MODO_FOTOS.TRIPLE
 
-    const campoFotos = getFotosForCampo(secId, campo)
+    const campoFotos = getFotosForCampo(secId, campo.nombre)
     const fotosAntes = campoFotos.filter(f => f.tipo === 'antes')
     const fotosDurante = campoFotos.filter(f => f.tipo === 'durante')
     const fotosDespues = campoFotos.filter(f => f.tipo === 'despues')
@@ -398,9 +398,9 @@ export default function TechChecklistPage() {
 
     return (
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <h5 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5"><CameraIcon className="w-3.5 h-3.5" /> {campo.foto_requerida ? 'Fotos (Antes/Durante/Después)' : 'Foto'}</h5>
+        <h5 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5"><CameraIcon className="w-3.5 h-3.5" /> {modoTriple ? 'Fotos (Antes/Durante/Después)' : 'Foto'}</h5>
 
-        {campo.foto_requerida ? (
+        {modoTriple ? (
           <div className="grid grid-cols-3 gap-2">
             <div className="flex flex-col gap-2">
               <button onClick={() => selectPhoto(secId, campo.nombre, 'antes')}
@@ -614,7 +614,7 @@ export default function TechChecklistPage() {
       <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-2">
           <h4 className="font-semibold text-gray-800 text-xs flex-1 line-clamp-2">{campo.nombre}</h4>
-          {(val || (campo.foto_requerida && getFotosForCampo(secId, campo.nombre).length > 0)) && (
+          {(val || getFotosForCampo(secId, campo.nombre).length > 0) && (
             <span className="text-xs text-green-600 font-bold ml-1 shrink-0">✓</span>
           )}
         </div>
