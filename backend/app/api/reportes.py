@@ -410,6 +410,7 @@ def export_reporte_docx(
     # Generar DOCX
     generator = DocxGenerator()
     generator.add_header_with_logo(proyecto_data)
+    generator.add_document_info(proyecto_data, reporte_data)
     generator.add_project_info(proyecto_data, reporte_data)
 
     todas_las_fotos = reporte.fotos or []

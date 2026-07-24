@@ -30,6 +30,7 @@ HEX_NARANJA = "E8622A"
 HEX_TEAL = "35A9A9"
 HEX_GRIS_FONDO = "F4F5F6"
 HEX_NARANJA_SUAVE = "FDF1EA"
+HEX_AMARILLO = "FFC629"
 
 TIPOS_SECUENCIA = ("antes", "durante", "despues")
 ETIQUETA_TIPO = {"antes": "Antes", "durante": "Durante", "despues": "Después"}
@@ -71,6 +72,7 @@ class DocxGenerator:
             seccion.left_margin = Inches(0.75)
             seccion.right_margin = Inches(0.75)
         self._cache_imagenes = {}
+        self._numero_ilustracion = 0
         self._aplicar_estilo_base()
 
     def _aplicar_estilo_base(self):
@@ -137,6 +139,79 @@ class DocxGenerator:
         run.font.color.rgb = GRIS
 
         self._add_separator()
+
+    # ------------------------------------------------- datos del documento
+
+    @staticmethod
+    def iniciales(texto, cantidad=2):
+        """Iniciales para el código del documento (Olímpica Salomia -> OS)"""
+        palabras = [p for p in str(texto or "").split() if p]
+        letras = "".join(p[0] for p in palabras[:cantidad])
+        return letras.upper() or "XX"
+
+    def codigo_documento(self, proyecto_nombre, tecnico_nombre, fecha):
+        """Código con el mismo formato que usan los informes de la empresa:
+        iniciales de proyecto, iniciales de quien redacta, mes-día y año."""
+        momento = fecha if isinstance(fecha, (datetime, date)) else datetime.now()
+        return {
+            "Proyecto": self.iniciales(proyecto_nombre),
+            "Redactor": self.iniciales(tecnico_nombre),
+            "Mes-día": momento.strftime("%m-%d"),
+            "Año": momento.strftime("%Y"),
+        }
+
+    def add_document_info(self, proyecto, reporte):
+        """Encabezado administrativo del informe"""
+        codigo = self.codigo_documento(
+            proyecto.get("nombre"), reporte.get("tecnico_nombre"), reporte.get("created_at")
+        )
+
+        datos = [
+            ("PROYECTO:", proyecto.get("nombre", "")),
+            ("CONTRATISTA:", EMPRESA),
+            ("NOMBRE DEL DOCUMENTO:", "Informe de mantenimiento preventivo"),
+            ("CÓDIGO DEL DOCUMENTO:", "-".join(codigo.values())),
+        ]
+
+        tabla = self.doc.add_table(rows=0, cols=2)
+        _sin_bordes(tabla)
+        for etiqueta, valor in datos:
+            fila = tabla.add_row()
+            celda_et, celda_val = fila.cells
+            celda_et.width = Inches(2.0)
+            celda_et.text = ""
+            run = celda_et.paragraphs[0].add_run(etiqueta)
+            run.bold = True
+            run.font.size = Pt(9)
+            run.font.color.rgb = GRIS_CLARO
+
+            celda_val.text = ""
+            run = celda_val.paragraphs[0].add_run(str(valor))
+            run.font.size = Pt(10)
+            run.font.color.rgb = GRIS
+
+        # Desglose del código, como en los informes existentes
+        tabla = self.doc.add_table(rows=2, cols=len(codigo))
+        _sin_bordes(tabla)
+        for celda, valor in zip(tabla.rows[0].cells, codigo.values()):
+            _sombrear(celda, HEX_AMARILLO)
+            celda.text = ""
+            p = celda.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(valor)
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = GRIS
+        for celda, etiqueta in zip(tabla.rows[1].cells, codigo.keys()):
+            _sombrear(celda, HEX_GRIS_FONDO)
+            celda.text = ""
+            p = celda.paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(etiqueta)
+            run.font.size = Pt(8)
+            run.font.color.rgb = GRIS_CLARO
+
+        self.doc.add_paragraph()
 
     # -------------------------------------------------------- datos generales
 
@@ -264,11 +339,28 @@ class DocxGenerator:
         self._cache_imagenes[url] = datos
         return datos
 
-    def _insertar_foto(self, parrafo, foto, ancho):
+    @staticmethod
+    def _descripcion_foto(foto):
+        """Pie de ilustración a partir de la clave "<seccion>.<campo>" """
+        item = str(foto.get("checklist_item", ""))
+        campo = item.split(".", 1)[1] if "." in item else item
+        sufijo = {"antes": " antes", "durante": " durante", "despues": " después"}
+        return f"Vista de {campo}{sufijo.get(foto.get('tipo'), '')}".strip() if campo else ""
+
+    def _insertar_foto(self, parrafo, foto, ancho, con_pie=True):
         datos = self._descargar_imagen(foto.get("url"))
         if datos:
             try:
                 parrafo.add_run().add_picture(BytesIO(datos), width=ancho)
+                descripcion = self._descripcion_foto(foto) if con_pie else ""
+                if descripcion:
+                    self._numero_ilustracion += 1
+                    pie = parrafo.add_run(
+                        f"\nIlustración {self._numero_ilustracion}. {descripcion}"
+                    )
+                    pie.italic = True
+                    pie.font.size = Pt(7.5)
+                    pie.font.color.rgb = GRIS_CLARO
                 return True
             except Exception as e:
                 logger.warning(f"No se pudo insertar la foto: {e}")
@@ -344,16 +436,39 @@ class DocxGenerator:
         self.doc.add_paragraph()
 
     def add_firma(self, tecnico_nombre, firma_url=None):
-        """Pie con la firma del técnico"""
-        self._titulo_bloque("Firma y Validación")
-        if firma_url:
-            p = self.doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            self._insertar_foto(p, {"url": firma_url}, Inches(2.2))
-        p = self.doc.add_paragraph()
+        """Bloque REALIZÓ, con el mismo formato que los informes de la empresa"""
+        tabla = self.doc.add_table(rows=3, cols=1)
+        _sin_bordes(tabla)
+        tabla.autofit = False
+
+        celda = tabla.rows[0].cells[0]
+        _sombrear(celda, HEX_NARANJA)
+        celda.text = ""
+        p = celda.paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p.add_run(f"\n{tecnico_nombre or ''}\nTécnico responsable · {EMPRESA}")
-        run.font.size = Pt(9)
+        run = p.add_run("REALIZÓ")
+        run.bold = True
+        run.font.size = Pt(10)
+        run.font.color.rgb = BLANCO
+
+        celda = tabla.rows[1].cells[0]
+        celda.text = ""
+        p = celda.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if firma_url:
+            self._insertar_foto(p, {"url": firma_url}, Inches(2.0), con_pie=False)
+
+        celda = tabla.rows[2].cells[0]
+        _sombrear(celda, HEX_GRIS_FONDO)
+        celda.text = ""
+        p = celda.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run(tecnico_nombre or "")
+        run.bold = True
+        run.font.size = Pt(10)
+        run.font.color.rgb = GRIS
+        run = p.add_run(f"\nTécnico responsable · {EMPRESA}")
+        run.font.size = Pt(8)
         run.font.color.rgb = GRIS_CLARO
 
     def _add_separator(self):

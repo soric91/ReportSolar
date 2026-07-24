@@ -19,6 +19,10 @@ htmlcov/
 # sqlite generado por la suite de tests del backend
 backend/test.db
 
+# material de referencia de la empresa (logos e informes de muestra).
+# El logo que usa el informe vive en backend/app/assets/
+info_pivman/
+
 # runtime data (not source)
 backend/logs/*.log
 backend/uploads/fotos/*
