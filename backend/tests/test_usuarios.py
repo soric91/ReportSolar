@@ -17,7 +17,7 @@ class TestUsuarios:
 
     def test_list_usuarios_pagination(self, client, auth_headers):
         """Test paginación en listado de usuarios"""
-        response = client.get("/api/usuarios?page=1&limit=10", headers=auth_headers)
+        response = client.get("/api/usuarios/?page=1&limit=10", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["page"] == 1
@@ -91,7 +91,7 @@ class TestUsuarios:
         response = client.delete(
             f"/api/usuarios/{test_usuario.id}", headers=auth_headers
         )
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_204_NO_CONTENT
 
         # Verificar que fue eliminado
         response = client.get(

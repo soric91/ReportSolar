@@ -36,7 +36,10 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(autouse=True)
 def setup_db():
+    from app.api.auth import limiter as auth_limiter
+
     Base.metadata.create_all(bind=engine)
+    auth_limiter.reset()
     yield
     Base.metadata.drop_all(bind=engine)
 
