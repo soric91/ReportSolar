@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -49,7 +50,10 @@ def refresh_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Invalid token type")
 
-    user_id = int(payload.get("sub"))
+    try:
+        user_id = uuid.UUID(payload.get("sub"))
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid token")
     user = db.query(Usuario).filter(Usuario.id == user_id).first()
     if not user or user.estado != "activo":
         raise HTTPException(status_code=401, detail="User not found or inactive")

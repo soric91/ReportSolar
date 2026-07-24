@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from uuid import UUID
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role, get_password_hash
 from app.core.config import get_settings
@@ -142,7 +143,7 @@ def list_usuarios(
 
 @router.get("/{usuario_id}", response_model=UsuarioResponse)
 def get_usuario(
-    usuario_id: int,
+    usuario_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
 ):
@@ -179,7 +180,7 @@ def create_usuario(
 
 @router.put("/{usuario_id}", response_model=UsuarioResponse)
 def update_usuario(
-    usuario_id: int,
+    usuario_id: UUID,
     usuario: UsuarioUpdate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
@@ -199,7 +200,7 @@ def update_usuario(
 
 @router.patch("/{usuario_id}/desactivar", response_model=UsuarioResponse)
 def desactivar_usuario(
-    usuario_id: int,
+    usuario_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
 ):
@@ -217,7 +218,7 @@ def desactivar_usuario(
 
 @router.delete("/{usuario_id}", status_code=204)
 def delete_usuario(
-    usuario_id: int,
+    usuario_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
 ):
@@ -227,18 +228,33 @@ def delete_usuario(
     if db_user.id == current_user.id:
         raise HTTPException(status_code=400, detail="No puedes eliminarte a ti mismo")
 
-    db.execute(
-        text("UPDATE visitas SET tecnico_id = NULL WHERE tecnico_id = :uid"),
-        {"uid": usuario_id},
-    )
-    db.execute(
-        text("UPDATE reportes SET tecnico_id = NULL WHERE tecnico_id = :uid"),
-        {"uid": usuario_id},
-    )
-    db.execute(
-        text("DELETE FROM proyecto_tecnico WHERE tecnico_id = :uid"),
-        {"uid": usuario_id},
-    )
+    uid_param = str(usuario_id)
+    if db.bind.dialect.name == "postgresql":
+        db.execute(
+            text("UPDATE visitas SET tecnico_id = NULL WHERE tecnico_id = :uid::uuid"),
+            {"uid": uid_param},
+        )
+        db.execute(
+            text("UPDATE reportes SET tecnico_id = NULL WHERE tecnico_id = :uid::uuid"),
+            {"uid": uid_param},
+        )
+        db.execute(
+            text("DELETE FROM proyecto_tecnico WHERE tecnico_id = :uid::uuid"),
+            {"uid": uid_param},
+        )
+    else:
+        db.execute(
+            text("UPDATE visitas SET tecnico_id = NULL WHERE tecnico_id = :uid"),
+            {"uid": uid_param},
+        )
+        db.execute(
+            text("UPDATE reportes SET tecnico_id = NULL WHERE tecnico_id = :uid"),
+            {"uid": uid_param},
+        )
+        db.execute(
+            text("DELETE FROM proyecto_tecnico WHERE tecnico_id = :uid"),
+            {"uid": uid_param},
+        )
 
     db.delete(db_user)
     db.commit()
@@ -246,7 +262,7 @@ def delete_usuario(
 
 @router.patch("/{usuario_id}/reset-password", response_model=UsuarioResponse)
 def reset_password(
-    usuario_id: int,
+    usuario_id: UUID,
     data: PasswordReset,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),

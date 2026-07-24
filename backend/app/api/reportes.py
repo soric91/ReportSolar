@@ -12,6 +12,7 @@ from app.services.docx_generator import DocxGenerator
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 import httpx
 import base64
 import time
@@ -42,8 +43,8 @@ class FotoUploadRequest(BaseModel):
 
 
 class ReporteCreateRequest(BaseModel):
-    visita_id: Optional[int] = None
-    proyecto_id: int
+    visita_id: Optional[UUID] = None
+    proyecto_id: UUID
     checklist: dict = {}
     observaciones: str = ""
     recomendaciones: str = ""
@@ -52,10 +53,10 @@ class ReporteCreateRequest(BaseModel):
 
 
 class ReporteDetailResponse(BaseModel):
-    id: int
-    visita_id: Optional[int] = None
-    tecnico_id: int
-    proyecto_id: int
+    id: UUID
+    visita_id: Optional[UUID] = None
+    tecnico_id: UUID
+    proyecto_id: UUID
     tecnico_nombre: str = ""
     proyecto_nombre: str = ""
     cliente: str = ""
@@ -101,7 +102,7 @@ def _build_reporte_response(
 
 @router.post("/{reporte_id}/fotos", status_code=201)
 def save_fotos_to_reporte(
-    reporte_id: int,
+    reporte_id: UUID,
     request: FotoUploadRequest,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
@@ -132,8 +133,8 @@ def save_fotos_to_reporte(
 
 @router.get("/", response_model=PaginatedResponse[ReporteDetailResponse])
 def list_reportes(
-    proyecto_id: Optional[int] = None,
-    tecnico_id: Optional[int] = None,
+    proyecto_id: Optional[UUID] = None,
+    tecnico_id: Optional[UUID] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -160,7 +161,7 @@ def list_reportes(
 
 @router.get("/{reporte_id}", response_model=ReporteDetailResponse)
 def get_reporte(
-    reporte_id: int,
+    reporte_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
@@ -219,7 +220,7 @@ def create_reporte(
 
 @router.put("/{reporte_id}", response_model=ReporteDetailResponse)
 def update_reporte(
-    reporte_id: int,
+    reporte_id: UUID,
     request: ReporteCreateRequest,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
@@ -241,7 +242,7 @@ def update_reporte(
 
 @router.delete("/{reporte_id}", status_code=204)
 def delete_reporte(
-    reporte_id: int,
+    reporte_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
@@ -256,7 +257,7 @@ def delete_reporte(
 
 class FotoUploadSingleRequest(BaseModel):
     proyecto_nombre: str
-    proyecto_id: int
+    proyecto_id: UUID
     checklist_item: str
     tipo: str
     imagen: str
@@ -330,7 +331,7 @@ def upload_foto(
 
 @router.get("/{reporte_id}/export-docx")
 def export_reporte_docx(
-    reporte_id: int,
+    reporte_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):

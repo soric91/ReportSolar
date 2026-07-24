@@ -36,13 +36,15 @@ class TestUsuarios:
         response = client.get(f"/api/usuarios/{test_usuario.id}", headers=auth_headers)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert data["id"] == test_usuario.id
+        assert data["id"] == str(test_usuario.id)
         assert data["email"] == test_usuario.email
         assert data["nombre"] == test_usuario.nombre
 
     def test_get_usuario_not_found(self, client, auth_headers):
         """Test obtener usuario inexistente"""
-        response = client.get("/api/usuarios/99999", headers=auth_headers)
+        response = client.get(
+            "/api/usuarios/00000000-0000-0000-0000-000000000000", headers=auth_headers
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_create_usuario(self, client, auth_headers):

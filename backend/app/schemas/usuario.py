@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 from app.models.usuario import RolEnum, EstadoEnum
 from app.schemas.validators import (
     EmailValidator,
@@ -73,7 +74,7 @@ class UsuarioUpdate(BaseModel):
 
 
 class UsuarioResponse(UsuarioBase):
-    id: int
+    id: UUID
     estado: EstadoEnum
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

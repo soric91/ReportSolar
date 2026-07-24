@@ -32,8 +32,8 @@ def test_create_reporte(db_session: Session, client: TestClient):
     db_session.commit()
 
     payload = {
-        "visita_id": 1,
-        "proyecto_id": proyecto.id,
+        "visita_id": "00000000-0000-0000-0000-000000000000",
+        "proyecto_id": str(proyecto.id),
         "checklist": {"test": "data"},
         "observaciones": "Test obs",
         "recomendaciones": "Test rec",

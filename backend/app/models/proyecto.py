@@ -1,8 +1,10 @@
 import enum
-from sqlalchemy import Column, Integer, String, Enum, DateTime, ForeignKey, JSON, Table
+import uuid
+from sqlalchemy import Column, String, Enum, DateTime, ForeignKey, JSON, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.types import GUID
 
 
 class TipoSistemaEnum(str, enum.Enum):
@@ -14,15 +16,15 @@ class TipoSistemaEnum(str, enum.Enum):
 proyecto_tecnico = Table(
     "proyecto_tecnico",
     Base.metadata,
-    Column("proyecto_id", Integer, ForeignKey("proyectos.id"), primary_key=True),
-    Column("tecnico_id", Integer, ForeignKey("usuarios.id"), primary_key=True),
+    Column("proyecto_id", GUID(), ForeignKey("proyectos.id"), primary_key=True),
+    Column("tecnico_id", GUID(), ForeignKey("usuarios.id"), primary_key=True),
 )
 
 
 class Proyecto(Base):
     __tablename__ = "proyectos"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     nombre = Column(String(200), nullable=False)
     cliente = Column(String(200), nullable=False)
     direccion = Column(String(300), nullable=False)
@@ -30,7 +32,7 @@ class Proyecto(Base):
         Enum(TipoSistemaEnum), nullable=False, default=TipoSistemaEnum.on_grid
     )
     componentes = Column(JSON, default=dict)
-    plantilla_id = Column(Integer, ForeignKey("plantillas_informe.id"), nullable=True)
+    plantilla_id = Column(GUID(), ForeignKey("plantillas_informe.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

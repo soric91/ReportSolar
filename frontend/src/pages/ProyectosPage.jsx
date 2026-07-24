@@ -219,7 +219,7 @@ export default function ProyectosPage() {
                       <Link to="/plantillas" className="text-sm text-primary-600 hover:text-primary-800 font-medium underline">Crear plantilla</Link>
                     </div>
                   ) : (
-                    <select value={form.plantilla_id || ''} onChange={(e) => setForm({ ...form, plantilla_id: e.target.value ? parseInt(e.target.value) : null })} className="w-full px-3 py-2 border rounded-md text-sm">
+                    <select value={form.plantilla_id || ''} onChange={(e) => setForm({ ...form, plantilla_id: e.target.value || null })} className="w-full px-3 py-2 border rounded-md text-sm">
                       <option value="">Sin plantilla</option>
                       {plantillas.map((p) => (
                         <option key={p.id} value={p.id}>{p.nombre}</option>

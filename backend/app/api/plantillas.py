@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from uuid import UUID
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
 from app.models.usuario import Usuario
@@ -191,7 +192,7 @@ def list_plantillas(
 
 @router.get("/{plantilla_id}", response_model=PlantillaResponse)
 def get_plantilla(
-    plantilla_id: int,
+    plantilla_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
 ):
@@ -222,7 +223,7 @@ def create_plantilla(
 
 @router.put("/{plantilla_id}", response_model=PlantillaResponse)
 def update_plantilla(
-    plantilla_id: int,
+    plantilla_id: UUID,
     plantilla: PlantillaUpdate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
@@ -244,7 +245,7 @@ def update_plantilla(
 
 @router.delete("/{plantilla_id}", status_code=204)
 def delete_plantilla(
-    plantilla_id: int,
+    plantilla_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
 ):

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
+from uuid import UUID
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
 from app.models.usuario import Usuario, EstadoEnum
@@ -49,7 +50,7 @@ def list_proyectos(
 
 @router.get("/{proyecto_id}", response_model=ProyectoResponse)
 def get_proyecto(
-    proyecto_id: int,
+    proyecto_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
@@ -109,7 +110,7 @@ def create_proyecto(
 
 @router.put("/{proyecto_id}", response_model=ProyectoResponse)
 def update_proyecto(
-    proyecto_id: int,
+    proyecto_id: UUID,
     proyecto: ProyectoUpdate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
@@ -131,7 +132,7 @@ def update_proyecto(
 
 @router.delete("/{proyecto_id}", status_code=204)
 def delete_proyecto(
-    proyecto_id: int,
+    proyecto_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
 ):
@@ -145,8 +146,8 @@ def delete_proyecto(
 
 @router.post("/{proyecto_id}/asignar-tecnico", response_model=ProyectoResponse)
 def asignar_tecnico(
-    proyecto_id: int,
-    tecnico_id: int = Query(...),
+    proyecto_id: UUID,
+    tecnico_id: UUID = Query(...),
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
 ):
@@ -179,8 +180,8 @@ def asignar_tecnico(
     "/{proyecto_id}/desasignar-tecnico/{tecnico_id}", response_model=ProyectoResponse
 )
 def desasignar_tecnico(
-    proyecto_id: int,
-    tecnico_id: int,
+    proyecto_id: UUID,
+    tecnico_id: UUID,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(require_role(["administrador"])),
 ):

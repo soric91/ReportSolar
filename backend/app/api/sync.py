@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.usuario import Usuario
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/api/sync", tags=["Sincronización"])
 
 
 class ProyectoSync(BaseModel):
-    id: int
+    id: UUID
     nombre: str
     cliente: str
     direccion: str
@@ -69,8 +70,8 @@ def sync_proyectos(
 
 class VisitaSyncItem(BaseModel):
     local_id: Optional[int] = None
-    reporte_id: Optional[int] = None
-    proyecto_id: int
+    reporte_id: Optional[UUID] = None
+    proyecto_id: UUID
     fecha: Optional[str] = None
     estado: str = "finalizada"
     checklist: dict = {}
@@ -89,8 +90,8 @@ class SyncBatchRequest(BaseModel):
 
 class SyncDetail(BaseModel):
     local_id: Optional[int] = None
-    server_id: Optional[int] = None
-    reporte_id: Optional[int] = None
+    server_id: Optional[UUID] = None
+    reporte_id: Optional[UUID] = None
     status: str
     error: Optional[str] = None
 

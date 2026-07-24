@@ -181,8 +181,8 @@ export default function ReportesPage() {
   }
 
   const filteredReportes = reportes.filter(r => {
-    if (filtroProyecto && r.proyecto_id !== parseInt(filtroProyecto)) return false
-    if (filtroTecnico && r.tecnico_id !== parseInt(filtroTecnico)) return false
+    if (filtroProyecto && r.proyecto_id !== filtroProyecto) return false
+    if (filtroTecnico && r.tecnico_id !== filtroTecnico) return false
     if (filtroEstado === 'completado' && r.estado !== 'completado') return false
     if (filtroEstado === 'borrador' && r.estado !== 'borrador') return false
     return true
@@ -315,7 +315,7 @@ export default function ReportesPage() {
         <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 overflow-y-auto p-2 sm:p-4">
           <div className="bg-white rounded-xl w-full max-w-3xl my-4 shadow-2xl">
             <div className="sticky top-0 bg-white border-b px-4 sm:px-6 py-3 flex justify-between items-center rounded-t-xl z-10">
-              <h2 className="font-bold text-gray-800">Informe #{selectedReporte.id}</h2>
+              <h2 className="font-bold text-gray-800">Informe #{String(selectedReporte.id).slice(0, 8)}</h2>
               <div className="flex items-center gap-2">
                 {selectedReporte.estado === 'completado' && (
                   <button onClick={handleExportDOCX} disabled={exporting}
@@ -456,7 +456,7 @@ export default function ReportesPage() {
               <div className="text-center text-xs text-gray-400 pt-2 border-t border-gray-100">
                 Estado: {selectedReporte.estado === 'completado' ? '✅ Completado' : '📝 Borrador'}
                 {' · '}Sincronizado: {selectedReporte.estado_sync === 'sincronizado' ? '✅' : '⏳ Pendiente'}
-                {' · '}#{selectedReporte.id}
+                {' · '}#{String(selectedReporte.id).slice(0, 8)}
               </div>
             </div>
           </div>

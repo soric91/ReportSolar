@@ -19,14 +19,14 @@ export default function TechProyectoPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const p = await db.getProyecto(parseInt(id))
+        const p = await db.getProyecto(id)
         setProyecto(p)
 
-        let localVisitas = await db.getVisitasByProyecto(parseInt(id))
+        let localVisitas = await db.getVisitasByProyecto(id)
         localVisitas = localVisitas.filter(vis => vis.estado !== 'eliminada')
 
         try {
-          const apiRes = await reportesService.list({ proyecto_id: parseInt(id) })
+          const apiRes = await reportesService.list({ proyecto_id: id })
           // Maneja respuesta paginada
           let apiReportes = []
           if (apiRes.data?.data) {
@@ -77,7 +77,7 @@ export default function TechProyectoPage() {
     try {
       // Check for existing borrador
       try {
-        const apiRes = await reportesService.list({ proyecto_id: parseInt(id) })
+        const apiRes = await reportesService.list({ proyecto_id: id })
         const all = apiRes.data?.data || apiRes.data || []
         const borrador = all.find(r => r.estado === 'borrador')
         if (borrador) {
@@ -93,7 +93,7 @@ export default function TechProyectoPage() {
       } catch (apiErr) {
         // If API fails, check local storage for pending borradores
         const pending = JSON.parse(localStorage.getItem('solar-pending-sync') || '[]')
-        const pendingBorrador = pending.find(p => p.proyecto_id === parseInt(id) && p.reporte_estado === 'borrador')
+        const pendingBorrador = pending.find(p => p.proyecto_id === id && p.reporte_estado === 'borrador')
         if (pendingBorrador) {
           setModal({
             isOpen: true,
@@ -107,7 +107,7 @@ export default function TechProyectoPage() {
       }
 
       const visitaId = await db.saveVisita({
-        proyecto_id: parseInt(id),
+        proyecto_id: id,
         fecha,
         estado: 'pendiente',
         checklist: {},
@@ -141,7 +141,7 @@ export default function TechProyectoPage() {
       onConfirm: async () => {
         try {
           await db.updateVisita({ ...visita, estado: 'eliminada' })
-          const v = await db.getVisitasByProyecto(parseInt(id))
+          const v = await db.getVisitasByProyecto(id)
           setVisitas(v.filter(vis => vis.estado !== 'eliminada'))
         } catch (err) {
           console.error('Error eliminando visita:', err)

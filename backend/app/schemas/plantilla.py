@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
+from uuid import UUID
 
 
 class PlantillaEncabezado(BaseModel):
@@ -49,7 +50,7 @@ class PlantillaUpdate(BaseModel):
 
 
 class PlantillaResponse(PlantillaBase):
-    id: int
+    id: UUID
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

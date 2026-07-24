@@ -1,16 +1,18 @@
+import uuid
 from sqlalchemy import Column, Integer, String, Enum, DateTime, ForeignKey, JSON, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.types import GUID
 
 
 class Reporte(Base):
     __tablename__ = "reportes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    visita_id = Column(Integer, ForeignKey("visitas.id"), nullable=True)
-    tecnico_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    proyecto_id = Column(Integer, ForeignKey("proyectos.id"), nullable=False)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
+    visita_id = Column(GUID(), ForeignKey("visitas.id"), nullable=True)
+    tecnico_id = Column(GUID(), ForeignKey("usuarios.id"), nullable=False)
+    proyecto_id = Column(GUID(), ForeignKey("proyectos.id"), nullable=False)
     checklist = Column(JSON, default=dict)
     observaciones = Column(Text, default="")
     recomendaciones = Column(Text, default="")

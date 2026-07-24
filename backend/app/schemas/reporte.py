@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
+from uuid import UUID
 
 
 class ReporteBase(BaseModel):
@@ -14,8 +15,8 @@ class ReporteBase(BaseModel):
 
 
 class ReporteCreate(ReporteBase):
-    visita_id: int
-    proyecto_id: int
+    visita_id: UUID
+    proyecto_id: UUID
 
 
 class ReporteUpdate(BaseModel):
@@ -29,10 +30,10 @@ class ReporteUpdate(BaseModel):
 
 
 class ReporteResponse(ReporteBase):
-    id: int
-    visita_id: int
-    tecnico_id: int
-    proyecto_id: int
+    id: UUID
+    visita_id: UUID
+    tecnico_id: UUID
+    proyecto_id: UUID
     pdf_path: str = ""
     estado: str = "borrador"
     estado_sync: str = "local"

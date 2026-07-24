@@ -1,8 +1,10 @@
 import enum
-from sqlalchemy import Column, Integer, String, Enum, DateTime
+import uuid
+from sqlalchemy import Column, String, Enum, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
+from app.core.types import GUID
 
 
 class RolEnum(str, enum.Enum):
@@ -18,7 +20,7 @@ class EstadoEnum(str, enum.Enum):
 class Usuario(Base):
     __tablename__ = "usuarios"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     nombre = Column(String(100), nullable=False)
     email = Column(String(150), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
@@ -73,7 +74,7 @@ async def get_current_user(
     if user_id_str is None:
         raise HTTPException(status_code=401, detail="Invalid token")
     try:
-        user_id = int(user_id_str)
+        user_id = uuid.UUID(user_id_str)
     except (ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid token")
 

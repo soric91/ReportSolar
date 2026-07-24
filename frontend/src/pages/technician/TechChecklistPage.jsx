@@ -26,6 +26,7 @@ export default function TechChecklistPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
+  const [dirty, setDirty] = useState(false)
   const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'alert' })
   const isOnline = useOnlineStatus()
 
@@ -39,13 +40,13 @@ export default function TechChecklistPage() {
         const defaults = getDefaultSeccionesSync()
         setSecciones(defaults)
 
-        const p = await db.getProyecto(parseInt(id))
+        const p = await db.getProyecto(id)
         setProyecto(p)
         if (p?.plantilla?.secciones) {
           setSecciones(mergeSeccionesWithDefaults(p.plantilla.secciones, defaults))
         } else if (p?.plantilla && !Array.isArray(p.plantilla)) {
           try {
-            const plantillaRes = await reportesService.list({ proyecto_id: parseInt(id) })
+            const plantillaRes = await reportesService.list({ proyecto_id: id })
             const reporte = (plantillaRes.data?.data || plantillaRes.data)?.[0]
             if (reporte?.plantilla?.secciones) {
               setSecciones(mergeSeccionesWithDefaults(reporte.plantilla.secciones, defaults))
@@ -57,11 +58,11 @@ export default function TechChecklistPage() {
 
         let reporteData = null
         try {
-          const res = await reportesService.list({ proyecto_id: parseInt(id) })
+          const res = await reportesService.list({ proyecto_id: id })
           const all = res.data?.data || res.data || []
 
           if (visitaId) {
-            reporteData = all.find(r => r.visita_id === parseInt(visitaId))
+            reporteData = all.find(r => String(r.visita_id) === String(visitaId))
           } else {
             reporteData = all.find(r => r.estado === 'borrador')
             if (!reporteData && all.length > 0) {
@@ -70,8 +71,8 @@ export default function TechChecklistPage() {
           }
         } catch (e) {
           if (visitaId) {
-            const visitas = await db.getVisitasByProyecto(parseInt(id))
-            const visita = visitas.find(v => v.id === parseInt(visitaId))
+            const visitas = await db.getVisitasByProyecto(id)
+            const visita = visitas.find(v => String(v.id) === String(visitaId))
             if (visita) {
               setChecklist(visita.checklist || {})
               setObservaciones(visita.observaciones || '')
@@ -115,12 +116,23 @@ export default function TechChecklistPage() {
     load()
   }, [id, visitaId])
 
+  useEffect(() => {
+    if (!dirty) return
+    const handler = (e) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [dirty])
+
   const updateItem = (secId, campo, valor) => {
     setChecklist(prev => ({
       ...prev,
       [secId]: { ...(prev[secId] || {}), [campo]: valor }
     }))
     setSaved(false)
+    setDirty(true)
   }
 
   const updateSubItem = (secId, campo, subKey, valor) => {
@@ -133,6 +145,7 @@ export default function TechChecklistPage() {
       }
     })
     setSaved(false)
+    setDirty(true)
   }
 
   const handleSave = async () => {
@@ -178,7 +191,7 @@ export default function TechChecklistPage() {
 
       const saveData = {
         reporte_id: serverReporteId,
-        proyecto_id: parseInt(id),
+        proyecto_id: id,
         fecha: new Date().toISOString(),
         estado: 'en_progreso',
         reporte_estado: 'borrador',
@@ -198,6 +211,7 @@ export default function TechChecklistPage() {
         }
       }
       setSaved(true)
+      setDirty(false)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
       setModal({
@@ -233,7 +247,7 @@ export default function TechChecklistPage() {
     try {
       syncService.addToPending({
         reporte_id: serverReporteId,
-        proyecto_id: parseInt(id),
+        proyecto_id: id,
         fecha: new Date().toISOString(),
         estado: 'finalizada',
         reporte_estado: 'completado',
@@ -307,6 +321,7 @@ export default function TechChecklistPage() {
               dataUrl: preview,
               uploaded: false,
             }])
+            setDirty(true)
           }
           img.src = ev.target.result
         }
@@ -326,6 +341,44 @@ export default function TechChecklistPage() {
 
   const deleteFoto = (fotoId) => {
     setFotos(prev => prev.filter(f => f.id !== fotoId))
+    setDirty(true)
+  }
+
+  const handleSectionChange = (i) => {
+    if (i === activeIdx) return
+    if (!dirty) {
+      setActiveIdx(i)
+      return
+    }
+    setModal({
+      isOpen: true,
+      title: 'Cambios sin guardar',
+      message: 'Tenés cambios sin guardar en esta sección. ¿Guardar antes de continuar?',
+      type: 'confirm',
+      confirmText: 'Guardar y continuar',
+      onConfirm: async () => {
+        await handleSave()
+        setActiveIdx(i)
+      },
+    })
+  }
+
+  const handleBackNavigation = (to) => {
+    if (!dirty) {
+      navigate(to)
+      return
+    }
+    setModal({
+      isOpen: true,
+      title: 'Cambios sin guardar',
+      message: 'Tenés cambios sin guardar. ¿Guardar antes de salir?',
+      type: 'confirm',
+      confirmText: 'Guardar y salir',
+      onConfirm: async () => {
+        await handleSave()
+        navigate(to)
+      },
+    })
   }
 
   const getFotosForCampo = (secId, campo) => {
@@ -662,64 +715,51 @@ export default function TechChecklistPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
-      <header className="bg-white shadow-md sticky top-0 z-10 border-b border-primary-100">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <button onClick={() => navigate(`/tech/proyecto/${id}`)} className="text-gray-500 hover:text-gray-700 -ml-1 p-2 rounded-lg hover:bg-gray-100 transition-colors">
-              <ArrowLeftIcon className="w-5 h-5" />
-            </button>
-            <div className="flex flex-col items-center">
-              <h1 className="font-bold text-gray-800 text-base">
-                {hasDraft ? 'Editando Informe' : 'Nuevo Informe'}
-              </h1>
-              {!isOnline && (
-                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-50 text-red-600 rounded-full text-[10px] font-medium mt-0.5">
-                  <WifiOffIcon className="w-3 h-3" /> Sin conexión
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              {hasDraft && (
-                <button onClick={handleDelete} className="text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors">
-                  <TrashIcon className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all duration-300" style={{width: `${progress}%`}}/>
+      <div className="sticky top-0 z-10">
+        <header className="bg-white shadow-md border-b border-primary-100">
+          <div className="px-4 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={() => handleBackNavigation(`/tech/proyecto/${id}`)} className="text-gray-500 hover:text-gray-700 -ml-1 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <ArrowLeftIcon className="w-5 h-5" />
+              </button>
+              <div className="flex flex-col items-center">
+                <h1 className="font-bold text-gray-800 text-base">
+                  {hasDraft ? 'Editando Informe' : 'Nuevo Informe'}
+                </h1>
+                {!isOnline && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-50 text-red-600 rounded-full text-[10px] font-medium mt-0.5">
+                    <WifiOffIcon className="w-3 h-3" /> Sin conexión
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                {hasDraft && (
+                  <button onClick={handleDelete} className="text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
-            <span className="text-xs font-bold text-gray-600 min-w-fit">{progress}%</span>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all duration-300" style={{width: `${progress}%`}}/>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-gray-600 min-w-fit">{progress}%</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">{completedCampos} de {totalCampos} campos completados</p>
           </div>
-          <p className="text-xs text-gray-500 mt-2">{completedCampos} de {totalCampos} campos completados</p>
-        </div>
-      </header>
+        </header>
 
-      {uploadProgress && (
-        <div className="mx-4 mt-3 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2 bg-primary-50 text-primary-700">
-          <SpinnerIcon className="w-4 h-4" />
-          Subiendo foto {uploadProgress.current + 1} de {uploadProgress.total}...
-        </div>
-      )}
-
-      {fotos.length > 0 && (
-        <div className="mx-4 mt-3 px-3 py-2 rounded-xl text-xs font-medium bg-green-50 text-green-700 flex items-center gap-1.5">
-          <CameraIcon className="w-3.5 h-3.5" /> {fotos.length} foto{fotos.length !== 1 ? 's' : ''}
-        </div>
-      )}
-
-
-      <div className="overflow-x-auto bg-white border-b sticky top-[140px] z-10 shadow-sm">
+        <div className="overflow-x-auto bg-white border-b shadow-sm">
         <div className="flex px-2 py-3 gap-1 min-w-min">
           {seccionesExpandidas.map((s, i) => {
             const count = s.campos?.reduce((acc, c) => acc + getFotosForCampo(s.id, c.nombre).length, 0) || 0
             const isCompleted = s.campos?.some(c => checklist[s.id]?.[c.nombre])
             return (
-              <button key={i} onClick={() => setActiveIdx(i)}
+              <button key={i} onClick={() => handleSectionChange(i)}
                 className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap flex items-center gap-1 transition-all ${
                   validActiveIdx === i
                     ? 'bg-primary-600 text-white shadow-md'
@@ -740,7 +780,21 @@ export default function TechChecklistPage() {
             )
           })}
         </div>
+        </div>
       </div>
+
+      {uploadProgress && (
+        <div className="mx-4 mt-3 px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-2 bg-primary-50 text-primary-700">
+          <SpinnerIcon className="w-4 h-4" />
+          Subiendo foto {uploadProgress.current + 1} de {uploadProgress.total}...
+        </div>
+      )}
+
+      {fotos.length > 0 && (
+        <div className="mx-4 mt-3 px-3 py-2 rounded-xl text-xs font-medium bg-green-50 text-green-700 flex items-center gap-1.5">
+          <CameraIcon className="w-3.5 h-3.5" /> {fotos.length} foto{fotos.length !== 1 ? 's' : ''}
+        </div>
+      )}
 
       <main className="px-4 py-4 pb-32 w-full">
         <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-100">
@@ -766,7 +820,7 @@ export default function TechChecklistPage() {
               <h4 className="font-semibold text-gray-800 text-sm mb-3 flex items-center gap-2">
                 📝 Observaciones Generales
               </h4>
-              <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)}
+              <textarea value={observaciones} onChange={(e) => { setObservaciones(e.target.value); setDirty(true) }}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:border-primary-400 focus:outline-none transition-colors min-h-[100px] resize-none"
                 placeholder="Describe cualquier observación importante..." />
             </div>
@@ -774,7 +828,7 @@ export default function TechChecklistPage() {
               <h4 className="font-semibold text-gray-800 text-sm mb-3 flex items-center gap-2">
                 💡 Recomendaciones
               </h4>
-              <textarea value={recomendaciones} onChange={(e) => setRecomendaciones(e.target.value)}
+              <textarea value={recomendaciones} onChange={(e) => { setRecomendaciones(e.target.value); setDirty(true) }}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:border-primary-400 focus:outline-none transition-colors min-h-[100px] resize-none"
                 placeholder="Describe las recomendaciones o acciones pendientes..." />
             </div>
@@ -809,7 +863,7 @@ export default function TechChecklistPage() {
         title={modal.title}
         message={modal.message}
         type={modal.type}
-        confirmText={modal.type === 'confirm' ? 'Confirmar' : 'Aceptar'}
+        confirmText={modal.confirmText || (modal.type === 'confirm' ? 'Confirmar' : 'Aceptar')}
         onClose={() => setModal({ ...modal, isOpen: false })}
         onConfirm={modal.onConfirm}
       />

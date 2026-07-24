@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, List
 from datetime import datetime
+from uuid import UUID
 from app.models.proyecto import TipoSistemaEnum
 
 
@@ -13,8 +14,8 @@ class ProyectoBase(BaseModel):
 
 
 class ProyectoCreate(ProyectoBase):
-    tecnicos_ids: Optional[List[int]] = []
-    plantilla_id: Optional[int] = None
+    tecnicos_ids: Optional[List[UUID]] = []
+    plantilla_id: Optional[UUID] = None
 
 
 class ProyectoUpdate(BaseModel):
@@ -23,11 +24,11 @@ class ProyectoUpdate(BaseModel):
     direccion: Optional[str] = None
     tipo_sistema: Optional[TipoSistemaEnum] = None
     componentes: Optional[Dict] = None
-    plantilla_id: Optional[int] = None
+    plantilla_id: Optional[UUID] = None
 
 
 class TecnicoAsignado(BaseModel):
-    id: int
+    id: UUID
     nombre: str
     email: str
 
@@ -36,9 +37,9 @@ class TecnicoAsignado(BaseModel):
 
 
 class ProyectoResponse(ProyectoBase):
-    id: int
+    id: UUID
     tecnicos: List[TecnicoAsignado] = []
-    plantilla_id: Optional[int] = None
+    plantilla_id: Optional[UUID] = None
     plantilla_nombre: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
