@@ -12,9 +12,12 @@ from datetime import date, datetime
 
 import httpx
 
+from app.core.config import get_settings
+
 logger = logging.getLogger(__name__)
 
 EMPRESA = "PIVMAN SOLAR S.A.S"
+BUCKET_FOTOS = "app_report"
 LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo_pivman.png"
 
 # Paleta tomada del logo
@@ -269,8 +272,9 @@ class DocxGenerator:
 
     def add_section(self, section_def, section_data, fotos):
         """Sección del checklist con sus campos y fotos"""
-        if not section_data or len(section_data) == 0:
+        if not section_data and not fotos:
             return
+        section_data = section_data or {}
 
         self._titulo_bloque(section_def.get("titulo", ""), section_def.get("icono", ""))
 
@@ -316,27 +320,56 @@ class DocxGenerator:
 
     # ----------------------------------------------------------------- fotos
 
-    def _descargar_imagen(self, url):
-        """Bytes de la imagen: data URI o descarga desde Supabase"""
-        if not url:
+    @staticmethod
+    def _bajar(url, headers=None):
+        """Bytes de una URL, o None dejando el motivo en el log"""
+        try:
+            resp = httpx.get(url, headers=headers, timeout=30, follow_redirects=True)
+            if resp.status_code != 200:
+                logger.warning(f"Foto {url[:80]} respondió {resp.status_code}")
+                return None
+            return resp.content
+        except Exception as e:
+            logger.warning(f"No se pudo descargar {url[:80]}: {e}")
             return None
-        if url in self._cache_imagenes:
-            return self._cache_imagenes[url]
+
+    def _descargar_imagen(self, foto):
+        """Bytes de la imagen de una foto del reporte.
+
+        Se privilegia la descarga autenticada por `path` con la service key:
+        la URL guardada es la pública del bucket y solo responde si el bucket
+        está marcado como público. Por `path` funciona en ambos casos.
+        """
+        url = foto.get("url") or ""
+        path = foto.get("path") or ""
+        clave = path or url
+        if not clave:
+            return None
+        if clave in self._cache_imagenes:
+            return self._cache_imagenes[clave]
 
         datos = None
-        try:
-            if url.startswith("data:"):
+        if url.startswith("data:"):
+            try:
                 datos = base64.b64decode(url.split(",", 1)[1])
-            elif url.startswith(("http://", "https://")):
-                resp = httpx.get(url, timeout=30, follow_redirects=True)
-                resp.raise_for_status()
-                datos = resp.content
-            else:
-                logger.warning(f"URL de foto no reconocida: {url[:60]}")
-        except Exception as e:
-            logger.warning(f"No se pudo obtener la foto {url[:60]}: {e}")
+            except Exception as e:
+                logger.warning(f"Data URI inválido: {e}")
+        else:
+            settings = get_settings()
+            if path and settings.SUPABASE_URL and settings.SUPABASE_SERVICE_KEY:
+                datos = self._bajar(
+                    f"{settings.SUPABASE_URL}/storage/v1/object/{BUCKET_FOTOS}/{path}",
+                    headers={
+                        "apikey": settings.SUPABASE_SERVICE_KEY,
+                        "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+                    },
+                )
+            if datos is None and url.startswith(("http://", "https://")):
+                datos = self._bajar(url)
+            if datos is None and not path and not url:
+                logger.warning("Foto sin url ni path")
 
-        self._cache_imagenes[url] = datos
+        self._cache_imagenes[clave] = datos
         return datos
 
     @staticmethod
@@ -348,7 +381,7 @@ class DocxGenerator:
         return f"Vista de {campo}{sufijo.get(foto.get('tipo'), '')}".strip() if campo else ""
 
     def _insertar_foto(self, parrafo, foto, ancho, con_pie=True):
-        datos = self._descargar_imagen(foto.get("url"))
+        datos = self._descargar_imagen(foto)
         if datos:
             try:
                 parrafo.add_run().add_picture(BytesIO(datos), width=ancho)

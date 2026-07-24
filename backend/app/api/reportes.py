@@ -414,6 +414,7 @@ def export_reporte_docx(
     generator.add_project_info(proyecto_data, reporte_data)
 
     todas_las_fotos = reporte.fotos or []
+    usadas = set()
     for section_id, section_data in (reporte.checklist or {}).items():
         if section_id == "datos_proyecto" or not section_data:
             continue
@@ -423,10 +424,21 @@ def export_reporte_docx(
         fotos_seccion = [
             f for f in todas_las_fotos if str(f.get("checklist_item", "")).startswith(prefijo)
         ]
+        usadas.update(id(f) for f in fotos_seccion)
         generator.add_section(
             _definicion_seccion(section_id, section_data, secciones_plantilla),
             section_data,
             fotos_seccion,
+        )
+
+    # Las fotos cuya clave no corresponde a ninguna sección del checklist no se
+    # descartan: van juntas al final para que el informe no las pierda
+    sueltas = [f for f in todas_las_fotos if id(f) not in usadas]
+    if sueltas:
+        generator.add_section(
+            {"titulo": "Registro Fotográfico", "icono": "", "campos": []},
+            {},
+            sueltas,
         )
 
     generator.add_texto_libre("Observaciones Generales", reporte.observaciones)
