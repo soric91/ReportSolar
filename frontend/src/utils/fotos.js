@@ -34,8 +34,19 @@ export function calcularDimensiones(width, height, max = MAX_LADO_PX) {
     : { width: (width / height) * max, height: max }
 }
 
+/** Clave con la que se guarda una foto: identifica sección + campo */
+export function claveChecklist(secId, campo) {
+  return `${secId}.${campo}`
+}
+
+/** Fotos cargadas para un campo concreto de una sección */
+export function fotosDeCampo(fotos, secId, campo) {
+  const clave = claveChecklist(secId, campo)
+  return (fotos || []).filter(f => f.checklist_item === clave)
+}
+
 export function construirFoto({ secId, campo, tipo, url, id }) {
-  const checklistItem = `${secId}.${campo}`
+  const checklistItem = claveChecklist(secId, campo)
   return {
     id: id ?? `${checklistItem}_${tipo}_${Date.now()}`,
     url,
