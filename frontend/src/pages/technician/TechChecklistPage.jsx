@@ -5,6 +5,7 @@ import { syncService } from '../../services/syncService'
 import { uploadService } from '../../services/uploadService'
 import { reportesService } from '../../services/reportesService'
 import { loadDefaultSecciones, getDefaultSeccionesSync, ESTADOS, mergeSeccionesWithDefaults, MODO_FOTOS, getModoFotos } from '../../utils/plantillas'
+import { ORIGEN_FOTO, crearInputFoto, calcularDimensiones, construirFoto, agregarFoto } from '../../utils/fotos'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { ArrowLeftIcon, TrashIcon, CameraIcon, GalleryIcon, CheckIcon, XIcon, SaveIcon, SpinnerIcon, WifiOffIcon } from '../../components/icons'
 import Modal from '../../components/Modal'
@@ -288,11 +289,8 @@ export default function TechChecklistPage() {
 
   // reemplazar: el campo admite una sola foto, la nueva pisa la anterior
   // origen 'camara' abre la cámara directo; 'galeria' deja elegir una imagen ya guardada
-  const selectPhoto = (secId, campo, tipo, { reemplazar = false, origen = 'camara' } = {}) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    if (origen === 'camara') input.capture = 'environment'
+  const selectPhoto = (secId, campo, tipo, { reemplazar = false, origen = ORIGEN_FOTO.CAMARA } = {}) => {
+    const input = crearInputFoto({ origen })
     input.onchange = async (e) => {
       const file = e.target.files[0]
       if (!file) return
@@ -302,33 +300,15 @@ export default function TechChecklistPage() {
           const img = new Image()
           img.onload = () => {
             const canvas = document.createElement('canvas')
-            const max = 1600
-            let w = img.width, h = img.height
-            if (w > max || h > max) {
-              if (w > h) { h = (h / w) * max; w = max }
-              else { w = (w / h) * max; h = max }
-            }
+            const { width: w, height: h } = calcularDimensiones(img.width, img.height)
             canvas.width = w
             canvas.height = h
             canvas.getContext('2d').drawImage(img, 0, 0, w, h)
             const preview = canvas.toDataURL('image/webp', 0.75)
-            const checklistItem = `${secId}.${campo}`
 
             // Agrega directamente sin modal (con ID único)
-            const nueva = {
-              id: `${checklistItem}_${tipo}_${Date.now()}`,
-              url: preview,
-              checklist_item: checklistItem,
-              tipo: tipo,
-              dataUrl: preview,
-              uploaded: false,
-            }
-            setFotos(prev => {
-              const base = reemplazar
-                ? prev.filter(f => !(f.checklist_item === checklistItem && f.tipo === tipo))
-                : prev
-              return [...base, nueva]
-            })
+            const nueva = construirFoto({ secId, campo, tipo, url: preview })
+            setFotos(prev => agregarFoto(prev, nueva, { reemplazar }))
             setDirty(true)
           }
           img.src = ev.target.result
@@ -423,12 +403,12 @@ export default function TechChecklistPage() {
                   {lista.length > 0 && <CheckIcon className="w-3 h-3" />} {label}
                 </span>
                 <div className="flex gap-1">
-                  <button onClick={() => selectPhoto(secId, campo.nombre, tipo, { origen: 'camara' })}
+                  <button onClick={() => selectPhoto(secId, campo.nombre, tipo, { origen: ORIGEN_FOTO.CAMARA })}
                     title={`${label}: tomar foto`} aria-label={`${label}: tomar foto`}
                     className="flex-1 py-2 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center min-h-[36px] transition-all">
                     <CameraIcon className="w-4 h-4" />
                   </button>
-                  <button onClick={() => selectPhoto(secId, campo.nombre, tipo, { origen: 'galeria' })}
+                  <button onClick={() => selectPhoto(secId, campo.nombre, tipo, { origen: ORIGEN_FOTO.GALERIA })}
                     title={`${label}: elegir de galería`} aria-label={`${label}: elegir de galería`}
                     className="flex-1 py-2 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center min-h-[36px] transition-all">
                     <GalleryIcon className="w-4 h-4" />
@@ -454,11 +434,11 @@ export default function TechChecklistPage() {
         ) : (
           <div className="flex flex-col gap-3">
             <div className="flex gap-2">
-              <button onClick={() => selectPhoto(secId, campo.nombre, 'foto_unica', { reemplazar: !esMultiple, origen: 'camara' })}
+              <button onClick={() => selectPhoto(secId, campo.nombre, 'foto_unica', { reemplazar: !esMultiple, origen: ORIGEN_FOTO.CAMARA })}
                 className="flex-1 py-3 px-3 rounded-lg text-sm font-medium border transition-all flex items-center justify-center gap-2 min-h-[44px] bg-primary-50 text-primary-600 border-primary-300 hover:bg-primary-100">
                 <CameraIcon className="w-4 h-4" /> Cámara
               </button>
-              <button onClick={() => selectPhoto(secId, campo.nombre, 'foto_unica', { reemplazar: !esMultiple, origen: 'galeria' })}
+              <button onClick={() => selectPhoto(secId, campo.nombre, 'foto_unica', { reemplazar: !esMultiple, origen: ORIGEN_FOTO.GALERIA })}
                 className="flex-1 py-3 px-3 rounded-lg text-sm font-medium border transition-all flex items-center justify-center gap-2 min-h-[44px] bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100">
                 <GalleryIcon className="w-4 h-4" /> Galería
               </button>
@@ -521,12 +501,12 @@ export default function TechChecklistPage() {
                     </div>
                     {fotoPerItem && (
                       <>
-                        <button onClick={() => selectPhoto(secId, `${campo.nombre}_${key}`, 'unica', { origen: 'camara' })}
+                        <button onClick={() => selectPhoto(secId, `${campo.nombre}_${key}`, 'unica', { origen: ORIGEN_FOTO.CAMARA })}
                           title={`${itemLabel}: tomar foto`} aria-label={`${itemLabel}: tomar foto`}
                           className="px-2 py-1.5 bg-primary-100 text-primary-700 rounded hover:bg-primary-200">
                           <CameraIcon className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => selectPhoto(secId, `${campo.nombre}_${key}`, 'unica', { origen: 'galeria' })}
+                        <button onClick={() => selectPhoto(secId, `${campo.nombre}_${key}`, 'unica', { origen: ORIGEN_FOTO.GALERIA })}
                           title={`${itemLabel}: elegir de galería`} aria-label={`${itemLabel}: elegir de galería`}
                           className="px-2 py-1.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
                           <GalleryIcon className="w-3.5 h-3.5" />
@@ -577,12 +557,12 @@ export default function TechChecklistPage() {
                   </div>
                   {fotoPerItem && (
                     <>
-                      <button onClick={() => selectPhoto(secId, `${campo.nombre}_${sub.nombre}`, 'unica', { origen: 'camara' })}
+                      <button onClick={() => selectPhoto(secId, `${campo.nombre}_${sub.nombre}`, 'unica', { origen: ORIGEN_FOTO.CAMARA })}
                         title={`${sub.nombre}: tomar foto`} aria-label={`${sub.nombre}: tomar foto`}
                         className="px-2 py-1.5 bg-primary-100 text-primary-700 rounded hover:bg-primary-200">
                         <CameraIcon className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => selectPhoto(secId, `${campo.nombre}_${sub.nombre}`, 'unica', { origen: 'galeria' })}
+                      <button onClick={() => selectPhoto(secId, `${campo.nombre}_${sub.nombre}`, 'unica', { origen: ORIGEN_FOTO.GALERIA })}
                         title={`${sub.nombre}: elegir de galería`} aria-label={`${sub.nombre}: elegir de galería`}
                         className="px-2 py-1.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200">
                         <GalleryIcon className="w-3.5 h-3.5" />

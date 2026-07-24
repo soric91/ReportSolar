@@ -16,6 +16,9 @@ node_modules/
 .coverage
 htmlcov/
 
+# sqlite generado por la suite de tests del backend
+backend/test.db
+
 # runtime data (not source)
 backend/logs/*.log
 backend/uploads/fotos/*
