@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { db } from '../../services/db'
 import { syncService } from '../../services/syncService'
 import { uploadService } from '../../services/uploadService'
@@ -14,7 +14,14 @@ import FotoSection from '../../components/FotoSection'
 export default function TechChecklistPage() {
   const { id, visitaId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const loadedRef = useRef(false)
+
+  // Fecha elegida al crear el informe; si se entra directo, la de hoy
+  const fechaVisita = () => {
+    const elegida = location.state?.fecha
+    return elegida ? new Date(elegida).toISOString() : new Date().toISOString()
+  }
 
   const [proyecto, setProyecto] = useState(null)
   const [secciones, setSecciones] = useState([])
@@ -64,7 +71,10 @@ export default function TechChecklistPage() {
           const all = res.data?.data || res.data || []
 
           if (visitaId) {
-            reporteData = all.find(r => String(r.visita_id) === String(visitaId))
+            // La lista navega con el id del reporte; se acepta el de visita
+            // por compatibilidad con enlaces guardados de antes
+            reporteData = all.find(r => String(r.id) === String(visitaId))
+              || all.find(r => r.visita_id && String(r.visita_id) === String(visitaId))
           } else {
             reporteData = all.find(r => r.estado === 'borrador')
             if (!reporteData && all.length > 0) {
@@ -194,7 +204,7 @@ export default function TechChecklistPage() {
       const saveData = {
         reporte_id: serverReporteId,
         proyecto_id: id,
-        fecha: new Date().toISOString(),
+        fecha: fechaVisita(),
         estado: 'en_progreso',
         reporte_estado: 'borrador',
         checklist: checklist || {},
@@ -250,7 +260,7 @@ export default function TechChecklistPage() {
       syncService.addToPending({
         reporte_id: serverReporteId,
         proyecto_id: id,
-        fecha: new Date().toISOString(),
+        fecha: fechaVisita(),
         estado: 'finalizada',
         reporte_estado: 'completado',
         checklist,

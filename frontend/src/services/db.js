@@ -67,6 +67,11 @@ export const db = {
     return index.getAll(proyectoId)
   },
 
+  async deleteVisita(id) {
+    const database = await dbPromise
+    await database.delete('visitas', id)
+  },
+
   async saveFoto(foto) {
     const database = await dbPromise
     const id = await database.add('fotos', { ...foto, created_at: new Date().toISOString() })

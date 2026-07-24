@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { db } from '../../services/db'
 import { reportesService } from '../../services/reportesService'
+import { syncService } from '../../services/syncService'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { ArrowLeftIcon, PlusIcon, TrashIcon, CheckCircleIcon, ClockIcon, WifiOffIcon } from '../../components/icons'
 import Modal from '../../components/Modal'
@@ -16,56 +17,49 @@ export default function TechProyectoPage() {
   const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'alert' })
   const isOnline = useOnlineStatus()
 
+  // El informe existe en un solo lugar: el servidor. Antes se creaba además
+  // una visita local al abrir el checklist, que nunca se rellenaba ni se
+  // borraba al sincronizar, así que el mismo informe aparecía dos veces.
+  const cargarInformes = async () => {
+    try {
+      const apiRes = await reportesService.list({ proyecto_id: id })
+      const data = apiRes.data?.data ?? apiRes.data
+      const reportes = Array.isArray(data) ? data : data ? [data] : []
+      setVisitas(reportes.map(r => ({
+        id: r.id,
+        fecha: r.created_at ? r.created_at.split('T')[0] : '',
+        estado: r.estado === 'completado' ? 'finalizada' : 'en_progreso',
+      })))
+    } catch (apiErr) {
+      console.warn('API no disponible, mostrando lo pendiente de sincronizar:', apiErr)
+      setVisitas(
+        syncService.getPending()
+          .filter(p => p.proyecto_id === id)
+          .map(p => ({
+            id: p.reporte_id || null,
+            fecha: p.fecha ? p.fecha.split('T')[0] : '',
+            estado: p.reporte_estado === 'completado' ? 'finalizada' : 'en_progreso',
+            pendiente: true,
+          }))
+      )
+    }
+  }
+
   useEffect(() => {
     const load = async () => {
       try {
         const p = await db.getProyecto(id)
         setProyecto(p)
 
-        let localVisitas = await db.getVisitasByProyecto(id)
-        localVisitas = localVisitas.filter(vis => vis.estado !== 'eliminada')
-
-        try {
-          const apiRes = await reportesService.list({ proyecto_id: id })
-          // Maneja respuesta paginada
-          let apiReportes = []
-          if (apiRes.data?.data) {
-            apiReportes = apiRes.data.data
-          } else if (Array.isArray(apiRes.data)) {
-            apiReportes = apiRes.data
-          } else if (apiRes.data) {
-            apiReportes = [apiRes.data]
+        // Purga las visitas locales huérfanas que dejaron versiones anteriores
+        const locales = await db.getVisitasByProyecto(id)
+        for (const v of locales) {
+          if (!v.checklist || Object.keys(v.checklist).length === 0) {
+            await db.deleteVisita(v.id)
           }
-
-          const localIds = new Set(localVisitas.map(v => v.id))
-          for (const r of apiReportes) {
-            if (!localIds.has(r.visita_id)) {
-              localVisitas.push({
-                id: r.visita_id,
-                proyecto_id: r.proyecto_id,
-                fecha: r.created_at ? r.created_at.split('T')[0] : '',
-                estado: r.estado === 'completado' ? 'finalizada' : 'en_progreso',
-                checklist: r.checklist || {},
-                observaciones: r.observaciones || '',
-                recomendaciones: r.recomendaciones || '',
-                fotos: r.fotos || [],
-                _fromApi: true,
-              })
-            } else {
-              const local = localVisitas.find(v => v.id === r.visita_id)
-              if (local && Object.keys(local.checklist || {}).length === 0 && Object.keys(r.checklist || {}).length > 0) {
-                local.checklist = r.checklist
-                local.observaciones = r.observaciones || ''
-                local.recomendaciones = r.recomendaciones || ''
-                local.fotos = r.fotos || []
-              }
-            }
-          }
-        } catch (apiErr) {
-          console.warn('API no disponible, usando solo datos locales:', apiErr)
         }
 
-        setVisitas(localVisitas)
+        await cargarInformes()
       } catch (err) {
         console.error('Error cargando proyecto:', err)
       }
@@ -92,8 +86,8 @@ export default function TechProyectoPage() {
         }
       } catch (apiErr) {
         // If API fails, check local storage for pending borradores
-        const pending = JSON.parse(localStorage.getItem('solar-pending-sync') || '[]')
-        const pendingBorrador = pending.find(p => p.proyecto_id === id && p.reporte_estado === 'borrador')
+        const pendingBorrador = syncService.getPending()
+          .find(p => p.proyecto_id === id && p.reporte_estado === 'borrador')
         if (pendingBorrador) {
           setModal({
             isOpen: true,
@@ -106,16 +100,10 @@ export default function TechProyectoPage() {
         }
       }
 
-      const visitaId = await db.saveVisita({
-        proyecto_id: id,
-        fecha,
-        estado: 'pendiente',
-        checklist: {},
-        observaciones: '',
-        recomendaciones: '',
-      })
+      // El borrador se crea recién al guardar, con el id del servidor: no se
+      // escribe nada local para no terminar con dos registros del mismo informe
       setShowNuevaVisita(false)
-      navigate(`/tech/checklist/${id}/${visitaId}`)
+      navigate(`/tech/checklist/${id}`, { state: { fecha } })
     } catch (err) {
       console.error('Error creando visita:', err)
       setModal({
@@ -129,7 +117,7 @@ export default function TechProyectoPage() {
   }
 
   const openVisita = (visita) => {
-    navigate(`/tech/checklist/${id}/${visita.id}`)
+    navigate(visita.id ? `/tech/checklist/${id}/${visita.id}` : `/tech/checklist/${id}`)
   }
 
   const deleteVisita = async (visita) => {
@@ -140,15 +128,14 @@ export default function TechProyectoPage() {
       type: 'confirm',
       onConfirm: async () => {
         try {
-          await db.updateVisita({ ...visita, estado: 'eliminada' })
-          const v = await db.getVisitasByProyecto(id)
-          setVisitas(v.filter(vis => vis.estado !== 'eliminada'))
+          if (visita.id) await reportesService.delete(visita.id)
+          await cargarInformes()
         } catch (err) {
-          console.error('Error eliminando visita:', err)
+          console.error('Error eliminando informe:', err)
           setModal({
             isOpen: true,
             title: 'Error',
-            message: 'Error al eliminar la visita',
+            message: 'Error al eliminar el informe',
             type: 'alert',
             onConfirm: null
           })
