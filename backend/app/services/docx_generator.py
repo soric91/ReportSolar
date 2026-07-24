@@ -285,32 +285,62 @@ class DocxGenerator:
         # Los campos que no estén en la plantilla igual se muestran, al final
         extras = [k for k in section_data.keys() if k not in nombres]
 
-        filas = [(n, section_data.get(n)) for n in nombres if section_data.get(n)]
-        filas += [(k, section_data.get(k)) for k in extras if section_data.get(k)]
+        fotos = fotos or []
+        asignadas = set()
 
-        if filas:
-            tabla = self.doc.add_table(rows=0, cols=2)
-            _sin_bordes(tabla)
-            for i, (etiqueta, valor) in enumerate(filas):
-                fila = tabla.add_row()
-                celda_et, celda_val = fila.cells[0], fila.cells[1]
-                celda_et.width = Inches(2.2)
-                if i % 2 == 0:
-                    _sombrear(celda_et, HEX_GRIS_FONDO)
-                    _sombrear(celda_val, HEX_GRIS_FONDO)
+        for nombre in nombres + extras:
+            valor = section_data.get(nombre)
+            propias = self._fotos_del_campo(fotos, nombre)
+            if not valor and not propias:
+                continue
+            asignadas.update(id(f) for f in propias)
+            # Cada campo con sus fotos debajo: agrupadas al final de la sección
+            # no se sabe a qué campo corresponde cada una
+            self._add_campo(nombre, valor)
+            self._add_photos_for_section(propias)
 
-                celda_et.text = ""
-                run = celda_et.paragraphs[0].add_run(str(etiqueta))
-                run.bold = True
-                run.font.size = Pt(9.5)
-                run.font.color.rgb = TEAL
+        sin_campo = [f for f in fotos if id(f) not in asignadas]
+        if sin_campo:
+            self._add_photos_for_section(sin_campo)
 
-                celda_val.text = ""
-                run = celda_val.paragraphs[0].add_run(self._texto_valor(valor))
-                run.font.size = Pt(10)
-
-        self._add_photos_for_section(fotos)
         self.doc.add_paragraph()
+
+    @staticmethod
+    def _fotos_del_campo(fotos, nombre):
+        """Fotos guardadas para un campo.
+
+        La clave es "<seccion>.<campo>"; los grupos de medidas agregan el ítem
+        al final ("<campo>_inv1_string1"), por eso también se acepta el prefijo.
+        """
+        seleccionadas = []
+        for foto in fotos:
+            item = str(foto.get("checklist_item", ""))
+            campo = item.split(".", 1)[1] if "." in item else ""
+            if campo == nombre or (nombre and campo.startswith(f"{nombre}_")):
+                seleccionadas.append(foto)
+        return seleccionadas
+
+    def _add_campo(self, nombre, valor):
+        """Nombre del campo y su descripción, como subtítulo de la sección"""
+        tabla = self.doc.add_table(rows=1, cols=1)
+        _sin_bordes(tabla)
+        celda = tabla.rows[0].cells[0]
+        _sombrear(celda, HEX_GRIS_FONDO)
+        celda.text = ""
+        p = celda.paragraphs[0]
+        # El campo no debe quedar al pie de una página y sus fotos en la
+        # siguiente: se pierde a qué campo corresponden
+        p.paragraph_format.keep_with_next = True
+        run = p.add_run(str(nombre))
+        run.bold = True
+        run.font.size = Pt(9.5)
+        run.font.color.rgb = TEAL
+
+        texto = self._texto_valor(valor) if valor else ""
+        if texto:
+            run = p.add_run(f"\n{texto}")
+            run.font.size = Pt(10)
+            run.font.color.rgb = GRIS
 
     def _texto_valor(self, valor):
         """Los grupos de medidas llegan como dict: se aplanan a una línea"""
@@ -482,13 +512,6 @@ class DocxGenerator:
                     self._insertar_foto(p, foto, Inches(1.9), alto_max=Inches(1.7))
 
     # ----------------------------------------------------------------- varios
-
-    def _add_field(self, label, value):
-        p = self.doc.add_paragraph()
-        run = p.add_run(f"{label}: ")
-        run.bold = True
-        run.font.color.rgb = TEAL
-        p.add_run(self._texto_valor(value))
 
     def add_texto_libre(self, titulo, texto, icono=""):
         """Bloques de observaciones y recomendaciones"""

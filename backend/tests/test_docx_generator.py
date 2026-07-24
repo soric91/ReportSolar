@@ -151,6 +151,71 @@ class TestNormalizarImagen:
         assert forma.width < forma.height  # conserva la proporción vertical
 
 
+class TestFotosPorCampo:
+    """Agrupadas al final de la sección no se sabe a qué campo pertenecen"""
+
+    SECCION = {
+        "titulo": "Módulos",
+        "icono": "",
+        "campos": [{"nombre": "Limpieza de módulos"}, {"nombre": "Notas"}],
+    }
+    DATOS = {"Limpieza de módulos": "Se lavó", "Notas": "Un panel partido"}
+
+    @staticmethod
+    def _foto(campo, tipo):
+        return {"tipo": tipo, "url": f"https://x/{campo}-{tipo}.webp",
+                "checklist_item": f"modulos.{campo}"}
+
+    def test_cada_campo_recibe_solo_sus_fotos(self):
+        fotos = [
+            self._foto("Limpieza de módulos", "antes"),
+            self._foto("Limpieza de módulos", "despues"),
+            self._foto("Notas", "foto_unica"),
+        ]
+        propias = DocxGenerator._fotos_del_campo(fotos, "Limpieza de módulos")
+        assert [f["tipo"] for f in propias] == ["antes", "despues"]
+        assert DocxGenerator._fotos_del_campo(fotos, "Notas") == [fotos[2]]
+
+    def test_los_grupos_de_medidas_incluyen_las_de_cada_item(self):
+        fotos = [{"tipo": "unica", "url": "https://x/a.webp",
+                  "checklist_item": "medidas_dc.Voltajes por String_inv1_string1"}]
+        assert DocxGenerator._fotos_del_campo(fotos, "Voltajes por String") == fotos
+
+    def test_un_campo_no_se_queda_con_las_fotos_de_otro(self):
+        fotos = [self._foto("Notas", "foto_unica")]
+        assert DocxGenerator._fotos_del_campo(fotos, "Limpieza de módulos") == []
+
+    def test_las_fotos_van_debajo_de_su_campo(self, monkeypatch):
+        monkeypatch.setattr(dg.httpx, "get", lambda url, **kw: _Respuesta(200, _webp_bytes()))
+        generator = DocxGenerator()
+        generator.add_section(
+            self.SECCION,
+            self.DATOS,
+            [self._foto("Limpieza de módulos", "antes"), self._foto("Notas", "foto_unica")],
+        )
+
+        # El orden de las tablas refleja el del documento: campo, sus fotos,
+        # campo siguiente, sus fotos
+        textos = [
+            " ".join(c.text for f in t.rows for c in f.cells) for t in generator.doc.tables
+        ]
+        i_limpieza = next(i for i, t in enumerate(textos) if "Limpieza de módulos" in t)
+        i_notas = next(i for i, t in enumerate(textos) if "Notas" in t)
+        i_antes = next(i for i, t in enumerate(textos) if "Antes" in t)
+        assert i_limpieza < i_antes < i_notas
+
+    def test_una_foto_sin_campo_conocido_no_se_pierde(self, monkeypatch):
+        monkeypatch.setattr(dg.httpx, "get", lambda url, **kw: _Respuesta(200, _webp_bytes()))
+        generator = DocxGenerator()
+        generator.add_section(
+            self.SECCION,
+            self.DATOS,
+            [{"tipo": "foto_unica", "url": "https://x/z.webp",
+              "checklist_item": "modulos.Campo Borrado"}],
+        )
+        assert generator.doc.inline_shapes
+
+
 class TestFotosEnElDocumento:
     def test_la_foto_queda_embebida_con_su_pie(self, monkeypatch):
         monkeypatch.setattr(dg.httpx, "get", lambda url, **kw: _Respuesta(200, _png_bytes()))
