@@ -22,11 +22,6 @@ Para que CI/CD funcione correctamente, configura los siguientes secrets en GitHu
 - **Descripción:** Service role key de Supabase
 - **Nota:** Mantener secreto, solo usar en backend
 
-### REDIS_URL
-- **Descripción:** URL de conexión a Redis
-- **Formato:** `redis://user:password@host:port/0`
-- **Producción:** Usar Redis cloud (Redis Labs, AWS ElastiCache, etc.)
-
 ## Frontend Secrets
 
 ### VITE_API_URL

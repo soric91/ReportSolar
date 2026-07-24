@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
-    REDIS_URL: str = "redis://redis:6379"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:80"
     # Admin - Credenciales iniciales
     ADMIN_EMAIL: str = ""

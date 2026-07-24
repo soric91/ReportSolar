@@ -1,16 +1,4 @@
 services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-    restart: unless-stopped
-
   db:
     image: postgres:15-alpine
     env_file: .env
@@ -43,7 +31,6 @@ services:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379
       SECRET_KEY: ${SECRET_KEY}
       ALGORITHM: ${ALGORITHM}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
@@ -57,8 +44,6 @@ services:
       retries: 3
       start_period: 30s
     depends_on:
-      redis:
-        condition: service_healthy
       db:
         condition: service_healthy
     restart: unless-stopped

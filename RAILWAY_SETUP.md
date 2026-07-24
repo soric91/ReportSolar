@@ -13,21 +13,14 @@
 - Auto-generated DATABASE_URL
 - Railway will provide connection details
 
-### 2. Redis (Managed)
-- Type: Redis
-- Region: us-west2
-- Auto-generated REDIS_URL
-
-### 3. Backend Service
+### 2. Backend Service
 - Name: `backend`
 - Dockerfile: `backend/Dockerfile`
 - Port: 8002
 - Link: PostgreSQL (auto-injects DATABASE_URL)
-- Link: Redis (auto-injects REDIS_URL)
 - Environment variables:
   ```
   DATABASE_URL=${DATABASE_URL}          # Auto-injected by PostgreSQL link
-  REDIS_URL=${REDIS_URL}                # Auto-injected by Redis link
   SECRET_KEY=<generate-secure-key>
   ALGORITHM=HS256
   ACCESS_TOKEN_EXPIRE_MINUTES=30
@@ -38,7 +31,7 @@
   SUPABASE_SERVICE_KEY=<your-supabase-key>
   ```
 
-### 4. Frontend Service
+### 3. Frontend Service
 - Name: `frontend`
 - Dockerfile: `frontend/Dockerfile`
 - Port: 5173
@@ -48,7 +41,7 @@
   VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
   ```
 
-### 5. Nginx Service
+### 4. Nginx Service
 - Name: `nginx`
 - Dockerfile: `nginx/Dockerfile`
 - Port: 80 (HTTP) and 443 (HTTPS)
@@ -59,7 +52,6 @@
 - nginx → backend (http://backend:8002)
 - nginx → frontend (http://frontend:5173)
 - backend → PostgreSQL (via DATABASE_URL env)
-- backend → Redis (via REDIS_URL env)
 
 ## Deployment Steps
 
