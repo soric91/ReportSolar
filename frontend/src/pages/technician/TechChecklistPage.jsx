@@ -7,7 +7,7 @@ import { reportesService } from '../../services/reportesService'
 import { loadDefaultSecciones, getDefaultSeccionesSync, ESTADOS, mergeSeccionesWithDefaults } from '../../utils/plantillas'
 import { ORIGEN_FOTO, crearInputFoto, calcularDimensiones, construirFoto, agregarFoto, fotosDeCampo } from '../../utils/fotos'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
-import { ArrowLeftIcon, TrashIcon, CameraIcon, GalleryIcon, CheckIcon, XIcon, SaveIcon, SpinnerIcon, WifiOffIcon } from '../../components/icons'
+import { ArrowLeftIcon, ChevronRightIcon, TrashIcon, CameraIcon, GalleryIcon, CheckIcon, XIcon, SaveIcon, SpinnerIcon, WifiOffIcon } from '../../components/icons'
 import Modal from '../../components/Modal'
 import FotoSection from '../../components/FotoSection'
 
@@ -350,6 +350,14 @@ export default function TechChecklistPage() {
         setActiveIdx(i)
       },
     })
+  }
+
+  // Guarda antes de avanzar: así nunca se llega a la sección siguiente
+  // con cambios pendientes, y sin obligar al técnico a tocar dos botones
+  const handleSiguiente = async () => {
+    if (dirty) await handleSave()
+    setActiveIdx(i => i + 1)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleBackNavigation = (to) => {
@@ -700,10 +708,18 @@ export default function TechChecklistPage() {
 
         <div className="mt-4 flex gap-2">
           <button onClick={handleSave} disabled={saving}
-            className="px-4 py-2.5 min-h-[44px] bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-all flex items-center gap-2">
+            className="flex-1 px-4 py-2.5 min-h-[44px] bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
             {saving ? <SpinnerIcon className="w-4 h-4" /> : saved ? <CheckIcon className="w-4 h-4" /> : <SaveIcon className="w-4 h-4" />}
-            {saving ? 'Guardando...' : saved ? 'Guardado' : 'Guardar Sección'}
+            {saving ? 'Guardando...' : saved ? 'Guardado' : 'Guardar'}
           </button>
+          {!isLastSection && (
+            <button onClick={handleSiguiente} disabled={saving}
+              title={dirty ? 'Guarda esta sección y pasa a la siguiente' : 'Pasar a la siguiente sección'}
+              className="flex-1 px-4 py-2.5 min-h-[44px] bg-white text-primary-700 border border-primary-300 rounded-lg text-sm font-medium hover:bg-primary-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+              Siguiente
+              <ChevronRightIcon className="w-4 h-4" />
+            </button>
+          )}
         </div>
         {isLastSection && (
           <>
