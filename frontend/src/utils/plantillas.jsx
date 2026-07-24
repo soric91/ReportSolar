@@ -20,12 +20,14 @@ export const ESTADOS = [
 export const MODO_FOTOS = {
   NINGUNA: 'ninguna',
   UNICA: 'unica',
+  MULTIPLE: 'multiple',
   TRIPLE: 'triple',
 }
 
 export const MODO_FOTOS_OPCIONES = [
   { value: MODO_FOTOS.NINGUNA, label: 'Sin fotos' },
   { value: MODO_FOTOS.UNICA, label: 'Una foto' },
+  { value: MODO_FOTOS.MULTIPLE, label: 'Múltiples fotos' },
   { value: MODO_FOTOS.TRIPLE, label: 'Antes/Durante/Después' },
 ]
 
@@ -49,7 +51,9 @@ export function flagsParaModoFotos(modo) {
   return {
     modo_fotos: modo,
     sin_fotos: modo === MODO_FOTOS.NINGUNA,
-    foto_unica: modo === MODO_FOTOS.UNICA,
+    // Los lectores viejos solo distinguen "lleva foto" de "no lleva":
+    // el modo múltiple se marca igual que el de una sola foto.
+    foto_unica: modo === MODO_FOTOS.UNICA || modo === MODO_FOTOS.MULTIPLE,
     foto_requerida: modo === MODO_FOTOS.TRIPLE,
   }
 }

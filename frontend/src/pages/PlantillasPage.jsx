@@ -393,6 +393,7 @@ export default function PlantillasPage() {
                               <span className="text-gray-500">{campo.nombre}:</span>
                               <span className="text-gray-300">________</span>
                               {getModoFotos(campo) === MODO_FOTOS.UNICA && <span className="text-[10px] text-green-500">(📷 una foto)</span>}
+                              {getModoFotos(campo) === MODO_FOTOS.MULTIPLE && <span className="text-[10px] text-green-600">(📷 múltiples fotos)</span>}
                               {getModoFotos(campo) === MODO_FOTOS.TRIPLE && <span className="text-[10px] text-blue-500">(📷 antes/durante/después)</span>}
                               {getModoFotos(campo) === MODO_FOTOS.NINGUNA && <span className="text-[10px] text-gray-400">(sin fotos)</span>}
                             </div>
