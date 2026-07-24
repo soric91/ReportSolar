@@ -9,6 +9,7 @@ from app.models.usuario import Usuario
 from app.models.reporte import Reporte
 from app.schemas.pagination import PaginatedResponse, PaginationParams
 from app.services.docx_generator import DocxGenerator
+from app.api.plantillas import DEFAULT_SECCIONES
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -329,6 +330,37 @@ def upload_foto(
     }
 
 
+ETIQUETA_TIPO_SISTEMA = {
+    "on_grid": "On-Grid",
+    "off_grid": "Off-Grid",
+    "hibrido": "Híbrido",
+}
+
+
+def _definicion_seccion(section_id, section_data, secciones_plantilla):
+    """Título, icono y campos reales de la sección.
+
+    Las secciones dinámicas se guardan como "<id>_inv1", "<id>_inv2"..., por eso
+    se busca también por prefijo. Si no aparece en la plantilla se arma un
+    encabezado a partir del id para no perder los datos.
+    """
+    for seccion in secciones_plantilla:
+        sid = seccion.get("id")
+        if not sid:
+            continue
+        if section_id == sid:
+            return seccion
+        if section_id.startswith(f"{sid}_inv"):
+            numero = section_id.rsplit("_inv", 1)[-1]
+            return {**seccion, "titulo": f"{seccion.get('titulo', sid)} - Inversor {numero}"}
+
+    return {
+        "titulo": section_id.replace("_", " ").title(),
+        "icono": "",
+        "campos": [{"nombre": k} for k in section_data.keys()],
+    }
+
+
 @router.get("/{reporte_id}/export-docx")
 def export_reporte_docx(
     reporte_id: UUID,
@@ -353,7 +385,13 @@ def export_reporte_docx(
         "nombre": reporte.proyecto.nombre if reporte.proyecto else "N/A",
         "cliente": reporte.proyecto.cliente if reporte.proyecto else "",
         "direccion": reporte.proyecto.direccion if reporte.proyecto else "",
-        "tipo_sistema": reporte.proyecto.tipo_sistema.value if reporte.proyecto else "",
+        "tipo_sistema": (
+            ETIQUETA_TIPO_SISTEMA.get(
+                reporte.proyecto.tipo_sistema.value, reporte.proyecto.tipo_sistema.value
+            )
+            if reporte.proyecto
+            else ""
+        ),
         "potencia": (reporte.checklist or {}).get("datos_proyecto", {}).get("Potencia (kW)", ""),
     }
 
@@ -362,20 +400,37 @@ def export_reporte_docx(
         "tecnico_nombre": reporte.tecnico.nombre if reporte.tecnico else "",
     }
 
+    plantilla = (
+        reporte.proyecto.plantilla
+        if reporte.proyecto and reporte.proyecto.plantilla
+        else None
+    )
+    secciones_plantilla = (plantilla.secciones if plantilla else None) or DEFAULT_SECCIONES
+
     # Generar DOCX
     generator = DocxGenerator()
     generator.add_header_with_logo(proyecto_data)
     generator.add_project_info(proyecto_data, reporte_data)
 
-    # Agregar secciones (simplificado - solo datos básicos)
+    todas_las_fotos = reporte.fotos or []
     for section_id, section_data in (reporte.checklist or {}).items():
-        if section_id != "datos_proyecto" and section_data:
-            section_def = {
-                "titulo": section_id.replace("_", " ").title(),
-                "icono": "📋",
-                "campos": [{"nombre": k, "sin_fotos": True} for k in section_data.keys()],
-            }
-            generator.add_section(section_def, section_data, reporte.fotos or [])
+        if section_id == "datos_proyecto" or not section_data:
+            continue
+        # Cada foto se guarda con la clave "<seccion>.<campo>", así que solo
+        # van a esta sección las suyas; antes se pasaban todas a cada una
+        prefijo = f"{section_id}."
+        fotos_seccion = [
+            f for f in todas_las_fotos if str(f.get("checklist_item", "")).startswith(prefijo)
+        ]
+        generator.add_section(
+            _definicion_seccion(section_id, section_data, secciones_plantilla),
+            section_data,
+            fotos_seccion,
+        )
+
+    generator.add_texto_libre("Observaciones Generales", reporte.observaciones)
+    generator.add_texto_libre("Recomendaciones", reporte.recomendaciones)
+    generator.add_firma(reporte_data["tecnico_nombre"], reporte.firma_url)
 
     # Guardar temporalmente
     docx_bytes = generator.generate()
