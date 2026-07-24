@@ -11,6 +11,7 @@ import logging
 from datetime import date, datetime
 
 import httpx
+from PIL import Image
 
 from app.core.config import get_settings
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 EMPRESA = "PIVMAN SOLAR S.A.S"
 BUCKET_FOTOS = "app_report"
+FORMATOS_SOPORTADOS = {"PNG", "JPEG", "GIF", "BMP", "TIFF"}
 LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo_pivman.png"
 
 # Paleta tomada del logo
@@ -380,11 +382,41 @@ class DocxGenerator:
         sufijo = {"antes": " antes", "durante": " durante", "despues": " después"}
         return f"Vista de {campo}{sufijo.get(foto.get('tipo'), '')}".strip() if campo else ""
 
-    def _insertar_foto(self, parrafo, foto, ancho, con_pie=True):
+    @staticmethod
+    def _normalizar_imagen(datos):
+        """Devuelve (bytes que Word acepta, proporción ancho/alto).
+
+        Word solo admite PNG/JPEG/GIF/BMP/TIFF. El frontend sube las fotos en
+        WebP (canvas.toDataURL('image/webp')), que python-docx rechaza con
+        UnrecognizedImageError, así que se reconvierte a JPEG.
+        """
+        try:
+            with Image.open(BytesIO(datos)) as imagen:
+                proporcion = imagen.width / imagen.height if imagen.height else 1
+                if imagen.format in FORMATOS_SOPORTADOS:
+                    return datos, proporcion
+                convertida = imagen.convert("RGB")
+                salida = BytesIO()
+                convertida.save(salida, "JPEG", quality=85, optimize=True)
+                return salida.getvalue(), proporcion
+        except Exception as e:
+            logger.warning(f"No se pudo normalizar la imagen: {e}")
+            return datos, 1.0
+
+    def _insertar_foto(self, parrafo, foto, ancho, con_pie=True, alto_max=None):
         datos = self._descargar_imagen(foto)
+        proporcion = 1.0
         if datos:
+            datos, proporcion = self._normalizar_imagen(datos)
+        if datos:
+            # Una foto vertical escalada solo por ancho ocupa media página:
+            # se limita también el alto, respetando la proporción
+            alto_max = alto_max or ancho
+            medidas = (
+                {"width": ancho} if proporcion >= (ancho / alto_max) else {"height": alto_max}
+            )
             try:
-                parrafo.add_run().add_picture(BytesIO(datos), width=ancho)
+                parrafo.add_run().add_picture(BytesIO(datos), **medidas)
                 descripcion = self._descripcion_foto(foto) if con_pie else ""
                 if descripcion:
                     self._numero_ilustracion += 1
@@ -435,7 +467,7 @@ class DocxGenerator:
                     run = p.add_run("—")
                     run.font.color.rgb = GRIS_CLARO
                 for foto in secuencia[tipo]:
-                    self._insertar_foto(p, foto, Inches(1.9))
+                    self._insertar_foto(p, foto, Inches(1.9), alto_max=Inches(1.7))
 
         if sueltas:
             columnas = 3
@@ -447,7 +479,7 @@ class DocxGenerator:
                     celda.text = ""
                     p = celda.paragraphs[0]
                     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    self._insertar_foto(p, foto, Inches(1.9))
+                    self._insertar_foto(p, foto, Inches(1.9), alto_max=Inches(1.7))
 
     # ----------------------------------------------------------------- varios
 

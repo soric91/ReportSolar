@@ -3,6 +3,7 @@ import io
 from datetime import date, datetime
 
 import pytest
+from docx.shared import Inches
 from PIL import Image
 
 from app.services import docx_generator as dg
@@ -12,6 +13,12 @@ from app.services.docx_generator import DocxGenerator, formatear_fecha
 def _png_bytes():
     buf = io.BytesIO()
     Image.new("RGB", (40, 30), (10, 20, 30)).save(buf, "PNG")
+    return buf.getvalue()
+
+
+def _webp_bytes(size=(40, 30)):
+    buf = io.BytesIO()
+    Image.new("RGB", size, (10, 20, 30)).save(buf, "WEBP")
     return buf.getvalue()
 
 
@@ -98,6 +105,50 @@ class TestDescargaDeFotos:
 
     def test_devuelve_none_si_no_hay_nada(self):
         assert DocxGenerator()._descargar_imagen({}) is None
+
+
+class TestNormalizarImagen:
+    """El frontend sube las fotos en WebP y Word no lo admite:
+    add_picture lanzaba UnrecognizedImageError y no entraba ninguna."""
+
+    def test_convierte_webp_a_un_formato_que_word_admite(self):
+        datos, _ = DocxGenerator._normalizar_imagen(_webp_bytes())
+        assert Image.open(io.BytesIO(datos)).format in dg.FORMATOS_SOPORTADOS
+
+    def test_deja_el_png_intacto(self):
+        original = _png_bytes()
+        datos, _ = DocxGenerator._normalizar_imagen(original)
+        assert datos is original
+
+    def test_informa_la_proporcion_para_poder_escalar(self):
+        _, proporcion = DocxGenerator._normalizar_imagen(_webp_bytes((800, 400)))
+        assert proporcion == pytest.approx(2.0)
+
+    def test_una_foto_webp_termina_embebida(self, monkeypatch):
+        monkeypatch.setattr(dg.httpx, "get", lambda url, **kw: _Respuesta(200, _webp_bytes()))
+        generator = DocxGenerator()
+        generator.add_section(
+            {"titulo": "Módulos", "icono": "", "campos": []},
+            {},
+            [{"tipo": "antes", "url": "https://x/f.webp", "checklist_item": "modulos.Limpieza"}],
+        )
+        assert generator.doc.inline_shapes
+
+    def test_la_foto_vertical_se_limita_por_alto(self, monkeypatch):
+        """Escalada solo por ancho, una foto 709x1600 mide 4 pulgadas de alto
+        y empuja la fila a la página siguiente."""
+        monkeypatch.setattr(
+            dg.httpx, "get", lambda url, **kw: _Respuesta(200, _webp_bytes((709, 1600)))
+        )
+        generator = DocxGenerator()
+        generator.add_section(
+            {"titulo": "Módulos", "icono": "", "campos": []},
+            {},
+            [{"tipo": "antes", "url": "https://x/f.webp", "checklist_item": "modulos.Limpieza"}],
+        )
+        forma = generator.doc.inline_shapes[0]
+        assert forma.height <= Inches(1.7)
+        assert forma.width < forma.height  # conserva la proporción vertical
 
 
 class TestFotosEnElDocumento:
